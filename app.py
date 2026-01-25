@@ -6,6 +6,7 @@ import random
 import base64
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 from streamlit_agraph import agraph, Node, Edge, Config
 
 def get_base64_image(image_path):
@@ -27,6 +28,10 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Use the same font family in Plotly charts as the rest of the app
+pio.templates["dsu"] = go.layout.Template(layout=go.Layout(font=dict(family="Nunito")))
+pio.templates.default = "dsu"
+
 # ---------------------------------
 # 1. MODERN CSS STYLING
 # ---------------------------------
@@ -37,7 +42,7 @@ st.markdown(
     /* =========================================
        GLOBAL RESET & BASE STYLES
        ========================================= */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;600;700&display=swap');
 
     * {
         box-sizing: border-box;
@@ -45,7 +50,7 @@ st.markdown(
 
     .stApp {
         background: linear-gradient(135deg, #0a0e1a 0%, #1a0f0f 100%);
-        font-family: 'Inter', sans-serif;
+        font-family: 'Nunito', 'Inter', sans-serif;
     }
 
     :root {
@@ -1780,8 +1785,8 @@ if page == "Rețea parteneri":
     final_edges = []
 
     # Font styles
-    common_font_style = {"color": "#ffffff", "size": 10, "face": "Inter"}
-    hub_font_style = {"color": "#ffffff", "size": 14, "face": "Inter", "bold": True}
+    common_font_style = {"color": "#ffffff", "size": 10, "face": "Nunito, Inter, sans-serif"}
+    hub_font_style = {"color": "#ffffff", "size": 14, "face": "Nunito, Inter, sans-serif", "bold": True}
 
     focus_id = st.session_state["selected_id"]
     edges_to_draw = []
@@ -1861,7 +1866,7 @@ if page == "Rețea parteneri":
 
         config = Config(
             width="100%",
-            height=900,
+            height=850,
             directed=False,
             physics=False,
             hierarchical=False
@@ -1962,26 +1967,135 @@ if page == "Rețea parteneri":
 
         config = Config(
             width="100%",
-            height=900,
+            height=850,
             directed=False,
             physics=True,
             hierarchical=False
         )
 
-    # Add mobile network container with scroll control
+    # Check if a node is selected for mobile layout
+    selected_id = st.session_state["selected_id"]
+    has_selection = selected_id and selected_id in nodes_data
+
+    # Mobile detail card - shown BEFORE the graph when a node is selected
+    if has_selection:
+        info = nodes_data[selected_id]
+
+        # Build badges HTML
+        badges_html = ""
+        if info.get("strategic"):
+            badges_html += '<span class="badge badge-strategic">Strategic</span>'
+        if info.get("ukraine"):
+            badges_html += '<span class="badge badge-ukraine">Ucraina</span>'
+        if info.get("is_fonss_member"):
+            badges_html += '<span class="badge badge-fonss">FONSS</span>'
+
+        # Build domain tags
+        if info["type"] == "Partner":
+            if info.get("is_fonss_member"):
+                tags_html = '<span class="tag-domain">Servicii sociale</span>'
+            else:
+                my_domains = [nodes_data[t]["label"] for s, t in edges_data if s == selected_id and t in nodes_data]
+                tags_html = "".join([f'<span class="tag-domain">{d}</span>' for d in sorted(set(my_domains))])
+            entity_type = classify_entity_type(info['label'])
+
+            card_content = f'<div class="partner-title">{info["label"]}</div><div style="margin-bottom: 6px;"><span style="font-size: 0.65rem; color: #94a3b8; background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 4px;">{entity_type}</span> {badges_html}</div><div class="partner-desc">{info["description"]}</div><div style="font-size: 0.65rem; color: #94a3b8; margin-top: 8px; margin-bottom: 4px; font-weight: 600;">DOMENII</div><div>{tags_html}</div>'
+        else:
+            # Domain node
+            partners_linked = [nodes_data[s]["label"] for s, t in edges_data if t == selected_id and s in nodes_data]
+            card_content = f'<div class="partner-title">{info["label"]}</div><div class="partner-desc">Acest domeniu conectează <b>{len(partners_linked)}</b> parteneri.</div>'
+
+        # Mobile-only detail card and back button (completely hidden on desktop)
+        st.markdown("""
+        <style>
+        /* Hide mobile-only elements on desktop */
+        @media (min-width: 769px) {
+            .mobile-only-section {
+                display: none !important;
+                height: 0 !important;
+                overflow: hidden !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .mobile-only-section * {
+                display: none !important;
+            }
+        }
+        @media (max-width: 768px) {
+            /* Hide stats overlay when node is selected */
+            .stats-overlay {
+                display: none !important;
+            }
+
+            /* Show mobile section */
+            .mobile-only-section {
+                display: block !important;
+            }
+            .mobile-detail-card {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                padding: 12px;
+                margin: 0 8px 8px 8px;
+            }
+            .mobile-detail-card .partner-title {
+                font-size: 0.95rem;
+                font-weight: 600;
+                color: #ffffff;
+                margin-bottom: 6px;
+            }
+            .mobile-detail-card .partner-desc {
+                font-size: 0.75rem;
+                color: #cbd5e1;
+                line-height: 1.4;
+            }
+            .mobile-detail-card .tag-domain {
+                font-size: 0.65rem;
+                padding: 2px 6px;
+            }
+        }
+        </style>
+        <div class="mobile-only-section">
+            <div class="mobile-detail-card">""" + card_content + """</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Mobile back button - only show on mobile screens
+        # Target the specific button container using its key attribute
+        st.markdown("""
+        <style>
+        @media (min-width: 769px) {
+            /* Target by key - the mobile back button */
+            .element-container.st-key-mobile_back_btn {
+                display: none !important;
+            }
+        }
+        @media (max-width: 768px) {
+            .element-container.st-key-mobile_back_btn {
+                margin: 0 8px 8px 8px !important;
+            }
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        if st.button("← Înapoi la rețea", use_container_width=True, key="mobile_back_btn"):
+            st.session_state["selected_id"] = None
+            st.rerun()
+
+    # Add mobile graph styling - target the agraph iframe container directly
     st.markdown("""
     <style>
     @media (max-width: 768px) {
-        /* Network container - limit height to prevent scroll trap */
-        .network-container {
-            max-height: 55vh;
-            overflow: hidden;
-            border-radius: 12px;
-            margin-bottom: 16px;
+        /* Target the agraph iframe container on mobile */
+        .stElementContainer:has(iframe[title="streamlit_agraph.agraph"]) {
             position: relative;
+            border-radius: 12px;
+            margin: 0 auto 16px auto !important;
+            display: flex;
+            justify-content: center;
         }
-        
-        .network-container::after {
+
+        /* Add touch hint below the graph */
+        .stElementContainer:has(iframe[title="streamlit_agraph.agraph"])::after {
             content: "Ciupiți pentru zoom • Trageți pentru a muta";
             position: absolute;
             bottom: 8px;
@@ -1993,21 +2107,22 @@ if page == "Rețea parteneri":
             border-radius: 12px;
             font-size: 0.65rem;
             pointer-events: none;
+            z-index: 10;
         }
-        
-        .network-container iframe {
-            max-height: 55vh !important;
+
+        /* Center the iframe on mobile and limit height */
+        iframe[title="streamlit_agraph.agraph"] {
             pointer-events: auto;
+            margin: 0 auto;
+            max-height: 400px !important;
+            height: 400px !important;
         }
     }
     </style>
-    <div class="network-container">
     """, unsafe_allow_html=True)
 
     # Render the graph
     return_value = agraph(nodes=final_nodes, edges=final_edges, config=config)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
 
     # Handle clicking on nodes
     if return_value:
@@ -2063,7 +2178,12 @@ elif page == "Statistici":
             "instruire": "data/instruire_persoane.csv",
             "protocoale": "data/protocoale.csv",
             "actiuni": "data/tipuri_actiuni.csv",
-            "expertiza": "data/arii_expertiza.csv"
+            "expertiza": "data/arii_expertiza.csv",
+            "flux": "data/flux_interventie.csv",
+            "timpi": "data/detaliere_timpi.csv",
+            "sanctiuni": "data/sanctiuni.csv",
+            "comanda": "data/lant_comanda.csv",
+            "timeline": "data/timeline_dsu.csv"
         }
         
         for key, path in files.items():
@@ -2102,7 +2222,7 @@ elif page == "Statistici":
         st.error("Eroare: Nu s-au găsit fișierele de date. Verifică folderul /data.")
     else:
         # --- MENIU TAB-URI ---
-        tab1, tab2, tab3 = st.tabs(["Operațional și urgențe", "Medical și aviație", "Prevenire și parteneri"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Operațional și urgențe", "Medical și aviație", "Prevenire și parteneri", "Analize avansate"])
 
         # ==========================================
         # TAB 1: OPERAȚIONAL
@@ -2136,6 +2256,7 @@ elif page == "Statistici":
             with c1:
                 st.subheader("Cerere vs. răspuns")
                 st.markdown("<div style='margin-bottom:10px; font-size:0.85rem; color:#94a3b8;'>Evoluția comparativă a apelurilor de urgență (cererea cetățenilor) față de intervențiile efective (capacitatea de răspuns) pe ultimii 10 ani.</div>", unsafe_allow_html=True)
+                st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: grafic liniar. Plasează cursorul pe puncte pentru valori exacte. Poți folosi zoom/pan din colțul graficului pentru perioade specifice.</div>", unsafe_allow_html=True)
                 
                 fig_main = go.Figure()
                 fig_main.add_trace(go.Scatter(x=D["interv"]['An'], y=D["interv"]['Interventii'], name='Intervenții Reale', line=dict(color='#dc2626', width=3), mode='lines+markers'))
@@ -2146,6 +2267,7 @@ elif page == "Statistici":
             with c2:
                 st.subheader("Distribuția misiunilor IGSU")
                 st.markdown("<div style='margin-bottom:10px; font-size:0.85rem; color:#94a3b8;'>Ce tipuri de urgențe gestionează pompierii și paramedicii? SMURD reprezintă majoritatea covârșitoare a intervențiilor.</div>", unsafe_allow_html=True)
+                st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: diagramă circulară. Treci cu mouse‑ul peste felii pentru procente și denumiri complete.</div>", unsafe_allow_html=True)
                 
                 if D["igsu"] is not None:
                     fig_pie = px.pie(D["igsu"], values="Număr", names="Subcategorie", hole=0.5, color_discrete_sequence=px.colors.sequential.RdBu)
@@ -2157,7 +2279,7 @@ elif page == "Statistici":
         # TAB 2: MEDICAL & AVIAȚIE
         # ==========================================
         with tab2:
-            st.markdown("#### Infrastructura critică: UPU și Aviația SMURD")
+            st.markdown("#### Infrastructura critică: UPU și aviația SMURD")
             st.markdown("""
             <span style='font-size:0.9rem; color:#cbd5e1'>
             Analizăm presiunea asupra spitalelor (prin numărul de pacienți ajunși în Unitățile de Primiri Urgențe) 
@@ -2170,6 +2292,7 @@ elif page == "Statistici":
             with m1:
                 st.subheader("Fluxul de pacienți în UPU")
                 st.markdown("<div style='font-size:0.85rem; color:#94a3b8;'>Volumul total anual de persoane care au necesitat asistență medicală de urgență în spitale.</div>", unsafe_allow_html=True)
+                st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: arie. Treci cu mouse‑ul pentru valori pe an și folosește zoom pentru intervale scurte.</div>", unsafe_allow_html=True)
                 
                 if D["upu"] is not None:
                     fig_upu = px.area(D["upu"], x="An", y="Prezentări în UPU")
@@ -2180,6 +2303,7 @@ elif page == "Statistici":
             with m2:
                 st.subheader("Activitatea aeriană de salvare")
                 st.markdown("<div style='font-size:0.85rem; color:#94a3b8;'>Orele de zbor acumulate anual de Inspectoratul General de Aviație (IGAV) în misiuni medicale și de căutare-salvare.</div>", unsafe_allow_html=True)
+                st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: bare. Treci cu mouse‑ul pe fiecare bară pentru valoarea exactă.</div>", unsafe_allow_html=True)
                 
                 if D["zbor"] is not None:
                     fig_zbor = px.bar(D["zbor"], x="An", y="Ore de zbor", text="Ore de zbor")
@@ -2191,7 +2315,7 @@ elif page == "Statistici":
         # TAB 3: PREVENIRE & PARTENERI
         # ==========================================
         with tab3:
-            st.markdown("#### Reziliența Comunității și Parteneriate")
+            st.markdown("#### Reziliența comunității și parteneriate")
             st.markdown("""
             <span style='font-size:0.9rem; color:#cbd5e1'>
             Situațiile de urgență nu se gestionează doar prin intervenție, ci și prin educație. 
@@ -2202,7 +2326,7 @@ elif page == "Statistici":
             p1, p2 = st.columns([1.4, 1])
             
             with p1:
-                st.subheader("Campania Națională 'Fii Pregătit'")
+                st.subheader("Campania națională 'Fii Pregătit'")
                 st.markdown("""
                 <div style='background-color:rgba(220, 38, 38, 0.1); padding:10px; border-radius:5px; margin-bottom:10px; font-size:0.85rem;'>
                 'Fii Pregătit' este platforma oficială de informare a DSU. 
@@ -2210,6 +2334,7 @@ elif page == "Statistici":
                 <br><strong>Harta:</strong> Arată numărul de persoane instruite fizic în fiecare județ raportat în 2024.
                 </div>
                 """, unsafe_allow_html=True)
+                st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: hartă. Treci cu mouse‑ul peste județe pentru numărul de persoane instruite.</div>", unsafe_allow_html=True)
                 
                 if D["instruire"] is not None:
                     # Procesare date
@@ -2257,6 +2382,7 @@ elif page == "Statistici":
                 # --- REDESIGN: Arii de expertiza (Bar Chart in loc de Pie) ---
                 st.subheader("Domeniile partenerilor DSU")
                 st.markdown("<div style='font-size:0.85rem; color:#94a3b8; margin-bottom:10px;'>În ce domenii activează organizațiile partenere?</div>", unsafe_allow_html=True)
+                st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: bare orizontale. Treci cu mouse‑ul pentru număr și compară rapid lungimile.</div>", unsafe_allow_html=True)
                 
                 if D["expertiza"] is not None:
                     # Sortam pentru aspect placut
@@ -2288,6 +2414,7 @@ elif page == "Statistici":
                 # --- REDESIGN: Protocoale (Area Chart in loc de Tabel) ---
                 st.subheader("Dinamica parteneriatelor")
                 st.markdown("<div style='font-size:0.85rem; color:#94a3b8; margin-bottom:10px;'>Evoluția semnării de noi protocoale de colaborare cu societatea civilă.</div>", unsafe_allow_html=True)
+                st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: arie cu puncte. Treci cu mouse‑ul pentru valorile pe an.</div>", unsafe_allow_html=True)
                 
                 if D["protocoale"] is not None:
                     fig_proto = px.area(
@@ -2307,6 +2434,429 @@ elif page == "Statistici":
                         margin={"l":0, "r":0, "b":0, "t":10}
                     )
                     st.plotly_chart(fig_proto, width="stretch")
+
+        # ==========================================
+        # TAB 4: ANALIZE AVANSATE
+        # ==========================================
+        with tab4:
+            st.markdown("#### Analize avansate și vizualizări speciale")
+            st.markdown("""
+            <span style='font-size:0.9rem; color:#cbd5e1'>
+            Această secțiune prezintă vizualizări avansate: fluxul operațional de intervenție,
+            anatomia timpului de răspuns, sancțiuni și control, ierarhia de comandă și evoluția istorică a sistemului.
+            </span><br><br>
+            """, unsafe_allow_html=True)
+
+            # --- 1. SANKEY DIAGRAM: Flux Intervenție ---
+            st.subheader("Fluxul operațional de intervenție")
+            st.markdown("""
+            <div style='font-size:0.85rem; color:#94a3b8; margin-bottom:15px;'>
+            Vizualizarea traseului informațional și decizional de la apelul 112 până la finalizarea misiunii.
+            </div>
+            """, unsafe_allow_html=True)
+            st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: diagramă Sankey. Treci cu mouse‑ul peste legături pentru a vedea etapa descrisă.</div>", unsafe_allow_html=True)
+
+            if D["flux"] is not None:
+                df_flux = D["flux"]
+
+                # Creăm lista unică de noduri
+                all_nodes = list(pd.concat([df_flux['Sursa'], df_flux['Destinatar']]).unique())
+                node_indices = {node: i for i, node in enumerate(all_nodes)}
+
+                # Culori gradient roșu-gri pentru noduri
+                n_nodes = len(all_nodes)
+                node_colors = []
+                for i in range(n_nodes):
+                    ratio = i / max(n_nodes - 1, 1)
+                    r = int(220 - ratio * 100)
+                    g = int(38 + ratio * 60)
+                    b = int(38 + ratio * 60)
+                    node_colors.append(f'rgb({r},{g},{b})')
+
+                fig_sankey = go.Figure(data=[go.Sankey(
+                    node=dict(
+                        pad=15,
+                        thickness=20,
+                        line=dict(color="rgba(255,255,255,0.3)", width=0.5),
+                        label=all_nodes,
+                        color=node_colors
+                    ),
+                    link=dict(
+                        source=[node_indices[s] for s in df_flux['Sursa']],
+                        target=[node_indices[t] for t in df_flux['Destinatar']],
+                        value=[1] * len(df_flux),
+                        color='rgba(220, 38, 38, 0.4)',
+                        hovertemplate='%{source.label} → %{target.label}<br>Acțiune: ' + df_flux['Actiune'].tolist()[0] + '<extra></extra>'
+                    )
+                )])
+
+                # Adăugăm hover customizat pentru link-uri
+                hover_texts = [f"{row['Sursa']} → {row['Destinatar']}<br><b>{row['Actiune']}</b>" for _, row in df_flux.iterrows()]
+                fig_sankey.data[0].link.customdata = df_flux['Actiune'].tolist()
+                fig_sankey.data[0].link.hovertemplate = '%{source.label} → %{target.label}<br><b>%{customdata}</b><extra></extra>'
+
+                fig_sankey.update_layout(
+                    height=400,
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    font=dict(color="white", size=12),
+                    margin=dict(l=20, r=20, t=20, b=20)
+                )
+                st.plotly_chart(fig_sankey, use_container_width=True)
+            else:
+                st.warning("Datele pentru fluxul de intervenție nu sunt disponibile.")
+
+            st.divider()
+
+            # --- 2. WATERFALL CHART: Detaliere Timpi ---
+            col_w1, col_w2 = st.columns([1.2, 1])
+
+            with col_w1:
+                st.subheader("Anatomia timpului de răspuns")
+                st.markdown("""
+                <div style='font-size:0.85rem; color:#94a3b8; margin-bottom:15px;'>
+                Analiza detaliată a etapelor operaționale care compun media de intervenție.
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: bare stivuite. Treci cu mouse‑ul pe segmente pentru durata fiecărei etape.</div>", unsafe_allow_html=True)
+
+                if D["timpi"] is not None:
+                    df_timpi = D["timpi"][D["timpi"]['Tip'] != 'Total'].copy()
+
+                    # Culori: Deplasare = roșu aprins, restul = gradient
+                    color_map = {
+                        'Preluare Apel': '#fdba74',
+                        'Alertare Resurse': '#fb923c',
+                        'Pregatire Echipaj': '#f97316',
+                        'Deplasare la Caz': '#dc2626'
+                    }
+
+                    fig_timpi = go.Figure()
+
+                    # Stacked horizontal bar - fiecare etapă este un segment
+                    cumsum = 0
+                    for _, row in df_timpi.iterrows():
+                        etapa = row['Etapa']
+                        durata = row['Durata_Min']
+                        color = color_map.get(etapa, '#f97316')
+
+                        fig_timpi.add_trace(go.Bar(
+                            y=['Timp Total'],
+                            x=[durata],
+                            name=etapa,
+                            orientation='h',
+                            marker=dict(color=color, line=dict(color='rgba(0,0,0,0.3)', width=1)),
+                            text=f"{durata} min",
+                            textposition='inside',
+                            insidetextanchor='middle',
+                            hovertemplate=f"<b>{etapa}</b><br>{durata} minute<extra></extra>"
+                        ))
+
+                    fig_timpi.update_layout(
+                        barmode='stack',
+                        height=170,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="white"),
+                        showlegend=True,
+                        legend=dict(orientation="h", yanchor="bottom", y=1.15, xanchor="center", x=0.5),
+                        xaxis_title="Minute",
+                        yaxis=dict(showticklabels=False),
+                        margin=dict(l=10, r=20, t=40, b=40)
+                    )
+                    st.plotly_chart(fig_timpi, use_container_width=True)
+
+                    # Afișăm și totalul
+                    total = D["timpi"][D["timpi"]['Tip'] == 'Total']['Durata_Min'].values
+                    if len(total) > 0:
+                        st.markdown(f"""
+                        <div style='text-align:center; margin-top:-10px;'>
+                            <span style='font-size:1.5rem; font-weight:700; color:#dc2626;'>{total[0]} minute</span>
+                            <span style='font-size:0.9rem; color:#94a3b8;'> - Timp mediu total de răspuns</span>
+                        </div>
+                        """, unsafe_allow_html=True)
+                else:
+                    st.warning("Datele pentru detaliere timpi nu sunt disponibile.")
+
+            # --- 3. HORIZONTAL BAR: Sancțiuni ---
+            with col_w2:
+                st.subheader("Control și legalitate")
+                st.markdown("""
+                <div style='font-size:0.85rem; color:#94a3b8; margin-bottom:15px;'>
+                Topul neregulilor constatate și sancțiunile aplicate operatorilor economici în 2024.
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: bare orizontale. Treci cu mouse‑ul pentru detalii și valoarea sancțiunilor.</div>", unsafe_allow_html=True)
+
+                if D["sanctiuni"] is not None:
+                    df_sanct = D["sanctiuni"].sort_values('Numar', ascending=True)
+
+                    fig_sanct = px.bar(
+                        df_sanct,
+                        x='Numar',
+                        y='Tip_Incalcare',
+                        orientation='h',
+                        text='Numar',
+                        color='Numar',
+                        color_continuous_scale=['#fecaca', '#f87171', '#dc2626', '#991b1b'],
+                        custom_data=['Valoare_RON', 'Top_Judet']
+                    )
+
+                    fig_sanct.update_traces(
+                        textposition='outside',
+                        hovertemplate='<b>%{y}</b><br>Sancțiuni: %{x}<br>Valoare: %{customdata[0]:,.0f} RON<br>Top județ: %{customdata[1]}<extra></extra>'
+                    )
+
+                    fig_sanct.update_layout(
+                        height=350,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="white"),
+                        xaxis_title="Număr sancțiuni",
+                        yaxis_title="",
+                        showlegend=False,
+                        coloraxis_showscale=False,
+                        margin=dict(l=10, r=20, t=20, b=50)
+                    )
+                    st.plotly_chart(fig_sanct, use_container_width=True)
+                else:
+                    st.warning("Datele pentru sancțiuni nu sunt disponibile.")
+
+            st.divider()
+
+            # --- 4. SUNBURST: Lanț Comandă ---
+            col_s1, col_s2 = st.columns([1, 1.3])
+
+            with col_s1:
+                st.subheader("Ierarhia de comandă și control")
+                st.markdown("""
+                <div style='font-size:0.85rem; color:#94a3b8; margin-bottom:15px;'>
+                Structura decizională a Sistemului Național de Management al Situațiilor de Urgență.
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: treemap. Treci cu mouse‑ul pe casete pentru a vedea denumirea completă.</div>", unsafe_allow_html=True)
+
+                if D["comanda"] is not None:
+                    df_cmd = D["comanda"]
+
+                    # Construim structura pentru treemap
+                    labels = []
+                    parents = []
+                    colors_tree = []
+                    text_colors = []
+
+                    # Culori pe nivel
+                    color_map = {
+                        'Strategic': '#dc2626',
+                        'Decizional': '#f97316',
+                        'Operational': '#f59e0b',
+                        'Coordonare': '#fbbf24',
+                        'Comanda': '#fcd34d',
+                        'Executie': '#fef3c7'
+                    }
+
+                    # Găsim rădăcina (entitate care este Superior dar nu este Subordonat)
+                    all_superiors = set(df_cmd['Superior'].unique())
+                    all_subordinates = set(df_cmd['Subordonat'].unique())
+                    root = list(all_superiors - all_subordinates)[0]
+
+                    def is_light(hex_color):
+                        hex_color = hex_color.lstrip('#')
+                        r, g, b = int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16)
+                        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                        return luminance > 0.65
+
+                    # Adăugăm rădăcina
+                    labels.append(root)
+                    parents.append("")
+                    colors_tree.append('#dc2626')
+                    text_colors.append('#ffffff')
+
+                    # Adăugăm toate relațiile
+                    for _, row in df_cmd.iterrows():
+                        sub = row['Subordonat']
+                        sup = row['Superior']
+                        tip = row['Tip_Relatie']
+
+                        if sub not in labels:
+                            node_color = color_map.get(tip, '#fef3c7')
+                            labels.append(sub)
+                            parents.append(sup)
+                            colors_tree.append(node_color)
+                            text_colors.append('#1f2937' if is_light(node_color) else '#ffffff')
+
+                    fig_treemap = go.Figure(go.Treemap(
+                        labels=labels,
+                        parents=parents,
+                        marker=dict(
+                            colors=colors_tree,
+                            line=dict(color='rgba(0,0,0,0.5)', width=2)
+                        ),
+                        hovertemplate='<b>%{label}</b><extra></extra>',
+                        textinfo='label',
+                        textfont=dict(size=12, color=text_colors),
+                        root_color='rgba(0,0,0,0)'
+                    ))
+
+                    fig_treemap.update_layout(
+                        height=400,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="white", size=11),
+                        margin=dict(l=10, r=10, t=10, b=10)
+                    )
+                    st.plotly_chart(fig_treemap, use_container_width=True)
+                else:
+                    st.warning("Datele pentru lanțul de comandă nu sunt disponibile.")
+
+            # --- 5. TIMELINE: Repere Istorice ---
+            with col_s2:
+                st.subheader("Repere istorice și evoluție legislativă")
+                st.markdown("""
+                <div style='font-size:0.85rem; color:#94a3b8; margin-bottom:15px;'>
+                Cronologia evenimentelor majore care au definit sistemul actual de urgență (1990 - 2024).
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown("<div style='font-size:0.75rem; color:#7f8ea3; margin-bottom:10px;'>Tip: timeline. Treci cu mouse‑ul peste puncte pentru detalii suplimentare.</div>", unsafe_allow_html=True)
+
+                if D["timeline"] is not None:
+                    df_time = D["timeline"]
+
+                    # Culori pe tip
+                    tip_colors = {
+                        'Legislativ': '#dc2626',
+                        'Organizational': '#f97316',
+                        'International': '#3b82f6',
+                        'Tehnologic': '#10b981',
+                        'Operational': '#8b5cf6',
+                        'Logistic': '#f59e0b',
+                        'Strategic': '#ec4899'
+                    }
+
+                    df_time['Color'] = df_time['Tip'].map(tip_colors).fillna('#94a3b8')
+
+                    fig_timeline = go.Figure()
+
+                    # Linie orizontală de bază
+                    fig_timeline.add_trace(go.Scatter(
+                        x=[df_time['An'].min() - 2, df_time['An'].max() + 2],
+                        y=[0, 0],
+                        mode='lines',
+                        line=dict(color='rgba(255,255,255,0.3)', width=2),
+                        hoverinfo='skip',
+                        showlegend=False
+                    ))
+
+                    def wrap_label(text, max_len=16, max_lines=2):
+                        words = str(text).split()
+                        lines = []
+                        current = ""
+                        for word in words:
+                            candidate = f"{current} {word}".strip()
+                            if len(candidate) <= max_len:
+                                current = candidate
+                            else:
+                                if current:
+                                    lines.append(current)
+                                current = word
+                                if len(lines) >= max_lines:
+                                    break
+                        if len(lines) < max_lines and current:
+                            lines.append(current)
+                        label = "<br>".join(lines[:max_lines])
+                        if len(lines) >= max_lines and len(" ".join(words)) > len(" ".join(lines)):
+                            label = label + "..."
+                        return label
+
+                    sorted_years = sorted(df_time['An'].unique())
+                    year_rank = {year: idx for idx, year in enumerate(sorted_years)}
+
+                    def calc_xshift(year):
+                        idx = year_rank.get(year, 0)
+                        shift = 0
+                        prev_year = sorted_years[idx - 1] if idx > 0 else None
+                        next_year = sorted_years[idx + 1] if idx < len(sorted_years) - 1 else None
+                        if prev_year is not None and abs(year - prev_year) <= 1:
+                            shift += 16
+                        if next_year is not None and abs(next_year - year) <= 1:
+                            shift -= 16
+                        if prev_year is not None and abs(year - prev_year) <= 2 and next_year is not None and abs(next_year - year) <= 2:
+                            shift += 8
+                        return shift
+
+                    # Puncte pentru fiecare eveniment
+                    for i, row in df_time.iterrows():
+                        y_pos = 0.95 if i % 2 == 0 else -0.95
+                        xshift = calc_xshift(row['An'])
+                        label_text = wrap_label(row['Eveniment'], max_len=16, max_lines=2)
+
+                        fig_timeline.add_trace(go.Scatter(
+                            x=[row['An']],
+                            y=[0],
+                            mode='markers',
+                            marker=dict(size=22, color=row['Color'], line=dict(color='white', width=2)),
+                            hovertemplate=f"<b>{row['An']}</b><br>{row['Eveniment']}<br><i>{row['Descriere']}</i><extra></extra>",
+                            showlegend=False
+                        ))
+
+                        # Linie verticală
+                        fig_timeline.add_trace(go.Scatter(
+                            x=[row['An'], row['An']],
+                            y=[0, y_pos * 0.6],
+                            mode='lines',
+                            line=dict(color=row['Color'], width=1, dash='dot'),
+                            hoverinfo='skip',
+                            showlegend=False
+                        ))
+
+                        # Eticheta
+                        fig_timeline.add_annotation(
+                            x=row['An'],
+                            y=y_pos,
+                            text=f"<b>{row['An']}</b><br>{label_text}",
+                            showarrow=False,
+                            font=dict(size=12, color='white'),
+                            align='center',
+                            bgcolor='rgba(0,0,0,0.6)',
+                            bordercolor='rgba(255,255,255,0.25)',
+                            borderwidth=1,
+                            borderpad=8,
+                            xshift=xshift
+                        )
+
+                    fig_timeline.update_layout(
+                        height=380,
+                        paper_bgcolor="rgba(0,0,0,0)",
+                        plot_bgcolor="rgba(0,0,0,0)",
+                        font=dict(color="white"),
+                        xaxis=dict(
+                            showgrid=False,
+                            zeroline=False,
+                            title="",
+                            tickmode='array',
+                            tickvals=df_time['An'].tolist(),
+                            tickangle=-45,
+                            showticklabels=False
+                        ),
+                        yaxis=dict(
+                            showgrid=False,
+                            zeroline=False,
+                            showticklabels=False,
+                            range=[-1.8, 1.8]
+                        ),
+                        margin=dict(l=20, r=20, t=6, b=0),
+                        showlegend=False
+                    )
+                    st.plotly_chart(fig_timeline, use_container_width=True)
+
+                    # Legenda tipuri
+                    legend_html = "<div style='display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:-70px;'>"
+                    for tip, color in tip_colors.items():
+                        legend_html += f"<span style='display:inline-flex; align-items:center; gap:5px;'><span style='width:12px; height:12px; background:{color}; border-radius:50%;'></span><span style='font-size:0.75rem; color:#cbd5e1;'>{tip}</span></span>"
+                    legend_html += "</div>"
+                    st.markdown(legend_html, unsafe_allow_html=True)
+                else:
+                    st.warning("Datele pentru timeline nu sunt disponibile.")
 
 
 # ---------------------------------
@@ -2338,8 +2888,9 @@ elif page == "Despre proiect":
                 Acest proiect oferă o reprezentare vizuală interactivă a rețelei de parteneriate dintre
                 Departamentul pentru Situații de Urgență (DSU) și diverse organizații din România.
                 <br><br>
-                Scopul principal este de a facilita înțelegerea complexității și diversității colaborărilor
-                care susțin capacitatea națională de răspuns la situații de urgență.
+                În plus, secțiunea de statistici aduce o imagine de ansamblu asupra activității DSU,
+                prin indicatori operaționali, medicali, de prevenire și analize avansate. Graficele sunt
+                gândite pentru a fi ușor de explorat și de înțeles de către cetățeni.
             </div>
         </div>
         """, unsafe_allow_html=True)

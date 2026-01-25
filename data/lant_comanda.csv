@@ -1,0 +1,9 @@
+Superior,Subordonat,Tip_Relatie
+Guvernul Romaniei,CNSU,Strategic
+CNSU,DSU,Decizional
+DSU,IGSU,Operational
+DSU,IGAV,Operational
+DSU,Ambulanta,Coordonare
+IGSU,Inspectorate Judetene,Comanda
+Inspectorate Judetene,Detasamente,Executie
+Inspectorate Judetene,Garzi Interventie,Executie

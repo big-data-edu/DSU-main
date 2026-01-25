@@ -1,0 +1,8 @@
+Pas,Sursa,Actiune,Destinatar
+1,Cetatean,Apel 112,STS
+2,STS,Transfer Date,Dispecerat Integrat
+3,Dispecerat Integrat,Alerta Echipaj,Echipaj Interventie
+4,Echipaj Interventie,Deplasare,Locul Evenimentului
+5,Comandant Actiune,Raportare,Dispecerat Integrat
+6,Dispecerat Integrat,Suport Suplimentar,Alte Forte
+7,Echipaj Interventie,Transport Pacient,UPU/Spital
