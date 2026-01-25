@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import os
 import math
@@ -1469,8 +1468,6 @@ if page == "Rețea parteneri":
         st.session_state["special_filter"] = None
     if "entity_filter" not in st.session_state:
         st.session_state["entity_filter"] = None
-    if "sidebar_open" not in st.session_state:
-        st.session_state["sidebar_open"] = False
 
     # Calculate statistics upfront
     total_partners = len([n for n in nodes_data.values() if n["type"] == "Partner" and n.get("parent_id") is None])
@@ -1624,7 +1621,7 @@ if page == "Rețea parteneri":
                 </div>
                 """, unsafe_allow_html=True)
 
-            if st.button("← Înapoi la rețea", width="stretch", key="back_btn"):
+            if st.button("← Înapoi la rețea", use_container_width=True, key="back_btn"):
                 st.session_state["selected_id"] = None
                 st.rerun()
                 
@@ -1701,7 +1698,7 @@ if page == "Rețea parteneri":
         st.markdown('<div class="filter-section-title">Sortează după tip</div>', unsafe_allow_html=True)
 
         if st.session_state.get("entity_filter"):
-            if st.button("✕ Resetează filtrul", key="reset_entity", type="secondary", width="stretch"):
+            if st.button("✕ Resetează filtrul", key="reset_entity", type="secondary", use_container_width=True):
                 st.session_state["entity_filter"] = None
                 st.rerun()
 
@@ -1710,7 +1707,7 @@ if page == "Rețea parteneri":
             is_active = st.session_state.get("entity_filter") == etype
             btn_type = "primary" if is_active else "secondary"
 
-            if st.button(f"{etype} ({count})", key=f"etype_{etype}", type=btn_type, width="stretch"):
+            if st.button(f"{etype} ({count})", key=f"etype_{etype}", type=btn_type, use_container_width=True):
                 if is_active:
                     st.session_state["entity_filter"] = None
                 else:
@@ -1726,10 +1723,10 @@ if page == "Rețea parteneri":
         st.markdown('<div class="filter-section-title">Sortează după domeniu</div>', unsafe_allow_html=True)
 
         c1, c2 = st.columns(2)
-        if c1.button("Toate", width="stretch", key="sel_all"):
+        if c1.button("Toate", use_container_width=True, key="sel_all"):
             st.session_state["filter_domains"] = all_domain_labels
             st.rerun()
-        if c2.button("Nimic", width="stretch", key="sel_none"):
+        if c2.button("Nimic", use_container_width=True, key="sel_none"):
             st.session_state["filter_domains"] = []
             st.rerun()
 
@@ -1761,7 +1758,7 @@ if page == "Rețea parteneri":
         is_ukr_active = st.session_state.get("special_filter") == "ukraine"
 
         strat_type = "primary" if is_strat_active else "secondary"
-        if st.button(f"⭐ Parteneri strategici ({strategic_count})", key="btn_strategic", type=strat_type, width="stretch"):
+        if st.button(f"⭐ Parteneri strategici ({strategic_count})", key="btn_strategic", type=strat_type, use_container_width=True):
             if is_strat_active:
                 st.session_state["special_filter"] = None
             else:
@@ -1770,7 +1767,7 @@ if page == "Rețea parteneri":
             st.rerun()
 
         ukr_type = "primary" if is_ukr_active else "secondary"
-        if st.button(f"🇺🇦 Sprijin Ucraina ({ukraine_count})", key="btn_ukraine", type=ukr_type, width="stretch"):
+        if st.button(f"🇺🇦 Sprijin Ucraina ({ukraine_count})", key="btn_ukraine", type=ukr_type, use_container_width=True):
             if is_ukr_active:
                 st.session_state["special_filter"] = None
             else:
@@ -1985,7 +1982,7 @@ if page == "Rețea parteneri":
         }
         
         .network-container::after {
-            content: "Pinch para zoom • Drag para mover";
+            content: "Ciupiți pentru zoom • Trageți pentru a muta";
             position: absolute;
             bottom: 8px;
             left: 50%;
@@ -2401,7 +2398,7 @@ elif page == "Despre proiect":
             <div class="info-title" style="font-size: 1.1rem; margin-bottom: 12px;">Contact</div>
             <div class="info-text">
                 Pentru întrebări sau sugestii:<br>
-                <a href="mailto:alexandru.poliac03@e-uvt.ro" style="color: #dc2626;">contact@example.com</a>
+                <a href="mailto:alexandru.poliac03@e-uvt.ro" style="color: #dc2626;">alexandru.poliac03@e-uvt.ro</a>
             </div>
         </div>
         """, unsafe_allow_html=True)
