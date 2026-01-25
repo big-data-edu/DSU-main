@@ -1591,7 +1591,7 @@ elif page == "Despre proiect":
             <div class="info-title" style="font-size: 1.1rem; margin-bottom: 12px;">Contact</div>
             <div class="info-text">
                 Pentru întrebări sau sugestii:<br>
-                <a href="mailto:contact@example.com" style="color: #dc2626;">contact@example.com</a>
+                <a href="mailto:alexandru.poliac03@e-uvt.ro" style="color: #dc2626;">contact@example.com</a>
             </div>
         </div>
         """, unsafe_allow_html=True)
