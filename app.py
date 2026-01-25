@@ -25,24 +25,8 @@ def get_base64_image(image_path):
 st.set_page_config(
     layout="wide",
     page_title="Ecosistem DSU",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
-
-# Force sidebar to be visible with JavaScript
-st.markdown("""
-<script>
-window.addEventListener('load', function() {
-    setTimeout(function() {
-        const sidebar = document.querySelector('[data-testid="stSidebar"]');
-        if (sidebar) {
-            sidebar.style.display = 'block';
-            sidebar.style.transform = 'translateX(0)';
-            sidebar.style.visibility = 'visible';
-        }
-    }, 100);
-});
-</script>
-""", unsafe_allow_html=True)
 
 # ---------------------------------
 # 1. MODERN CSS STYLING
@@ -183,54 +167,31 @@ st.markdown(
         }
     }
 
-    /* Mobile: Hide sidebar completely - use Streamlit native toggle */
+    /* Mobile: Hide sidebar completely - use in-page filters instead */
     @media (max-width: 768px) {
-        /* Sidebar slides in from left */
         section[data-testid="stSidebar"] {
-            position: fixed !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 280px !important;
-            max-width: 85vw !important;
-            min-width: auto !important;
-            height: 100vh !important;
-            z-index: 999998 !important;
-            transform: translateX(-100%) !important;
-            transition: transform 0.3s ease !important;
+            display: none !important;
+            width: 0 !important;
+            min-width: 0 !important;
         }
-
-        /* Hide Streamlit's native toggle buttons on mobile too */
-        button[data-testid="collapsedControl"],
-        button[data-testid="baseButton-header"],
-        button[data-testid="stSidebarNavToggle"] {
+        
+        /* Also hide any sidebar toggle button */
+        button[data-testid="stSidebarCollapseButton"],
+        button[kind="header"],
+        [data-testid="collapsedControl"] {
             display: none !important;
         }
-
-        /* Mobile sidebar content adjustments */
-        section[data-testid="stSidebar"] > div {
-            padding-top: 16px !important;
-            padding-bottom: 80px !important;
-            height: 100% !important;
+        
+        /* Fix network scroll trap - limit height and add touch handling */
+        iframe {
+            max-height: 60vh !important;
+            touch-action: pan-y !important;
+        }
+        
+        /* Ensure main content is scrollable */
+        .main .block-container {
             overflow-y: auto !important;
-        }
-
-        section[data-testid="stSidebar"] > div > div:first-child {
-            display: block !important;
-        }
-
-        section[data-testid="stSidebar"] > div > div:nth-child(2) {
-            padding-top: 0 !important;
-        }
-
-        /* Ensure sidebar buttons are properly sized for touch */
-        section[data-testid="stSidebar"] button {
-            min-height: 44px !important;
-            font-size: 0.85rem !important;
-        }
-
-        section[data-testid="stSidebar"] .streamlit-expanderHeader {
-            min-height: 44px !important;
-            font-size: 0.85rem !important;
+            -webkit-overflow-scrolling: touch !important;
         }
     }
 
@@ -238,17 +199,13 @@ st.markdown(
     @media (min-width: 769px) {
         section[data-testid="stSidebar"] > div {
             background: transparent !important;
-            padding-top: 60px !important;
+            padding-top: 70px !important;
         }
 
-        /* NUCLEAR OPTION - Hide the entire sidebar header */
-        section[data-testid="stSidebar"] > div > div:first-child {
+        /* Hide sidebar collapse button on desktop only - keep sidebar always visible */
+        section[data-testid="stSidebar"] button[kind="header"],
+        section[data-testid="stSidebar"] [data-testid="stSidebarNavToggle"] {
             display: none !important;
-        }
-        
-        /* Add padding to sidebar content after hiding header */
-        section[data-testid="stSidebar"] > div > div:nth-child(2) {
-            padding-top: 2rem !important;
         }
     }
 
@@ -298,34 +255,9 @@ st.markdown(
         gap: 16px;
     }
 
-    /* Mobile menu button - hidden on desktop */
+    /* Mobile menu button - HIDDEN, using Streamlit native toggle instead */
     .mobile-menu-btn {
-        display: none;
-        background: rgba(220, 38, 38, 0.8);
-        border: 1px solid rgba(220, 38, 38, 0.6);
-        color: #ffffff;
-        font-size: 1.3rem;
-        padding: 8px 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        flex-shrink: 0;
-        line-height: 1;
-        transition: all 0.2s ease;
-        user-select: none;
-        -webkit-tap-highlight-color: transparent;
-    }
-
-    .mobile-menu-btn:hover,
-    .mobile-menu-btn:active {
-        background: rgba(220, 38, 38, 1);
-    }
-
-    @media (max-width: 768px) {
-        .mobile-menu-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        display: none !important;
     }
 
     .sticky-header-spacer {
@@ -520,9 +452,7 @@ st.markdown(
     @media (max-width: 768px) {
         .sticky-header-container {
             padding: 8px 12px;
-            height: auto;
-            min-height: 56px;
-            flex-wrap: nowrap;
+            height: 56px;
             gap: 8px;
         }
 
@@ -535,7 +465,7 @@ st.markdown(
         }
 
         .header-logo img {
-            height: 32px;
+            height: 32px !important;
         }
 
         .header-logos {
@@ -544,27 +474,38 @@ st.markdown(
         }
 
         .header-logos img {
-            height: 26px;
+            height: 26px !important;
         }
 
-        /* Radio nav on mobile - horizontal scroll */
+        .sticky-header-spacer {
+            height: 100px !important; /* Space for header + nav bar */
+        }
+
+        /* Radio nav on mobile - fixed below header as a nav bar */
         .stRadio {
-            position: relative !important;
-            top: auto !important;
-            left: auto !important;
+            position: fixed !important;
+            top: 56px !important; /* Right below the header */
+            left: 0 !important;
+            right: 0 !important;
             transform: none !important;
-            width: auto !important;
-            max-width: none !important;
-            height: auto !important;
-            flex: 1 !important;
-            min-width: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 44px !important;
+            background: linear-gradient(135deg, #0a0e1a 0%, #1a0f0f 100%) !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+            z-index: 999998 !important;
+            padding: 0 8px !important;
         }
 
         .stRadio > div {
             width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            align-items: center !important;
         }
 
         .stRadio div[role="radiogroup"] {
+            width: 100% !important;
             flex-wrap: nowrap !important;
             overflow-x: auto !important;
             -webkit-overflow-scrolling: touch !important;
@@ -572,7 +513,7 @@ st.markdown(
             -ms-overflow-style: none !important;
             gap: 6px !important;
             padding: 4px 0 !important;
-            justify-content: flex-start !important;
+            justify-content: center !important;
         }
 
         .stRadio div[role="radiogroup"]::-webkit-scrollbar {
@@ -589,27 +530,33 @@ st.markdown(
         .stRadio div[role="radiogroup"] label p {
             font-size: 0.7rem !important;
         }
-
-        .sticky-header-spacer {
-            height: 56px !important;
-        }
     }
 
     @media (max-width: 480px) {
         .sticky-header-container {
             padding: 6px 8px;
+            height: 48px;
         }
 
         .header-logo img {
-            height: 28px;
+            height: 26px !important;
         }
 
         .header-logos img {
-            height: 22px;
+            height: 20px !important;
         }
 
         .header-logos img:nth-child(n+3) {
             display: none;
+        }
+
+        .sticky-header-spacer {
+            height: 88px !important; /* 48px header + 40px nav */
+        }
+
+        .stRadio {
+            top: 48px !important;
+            height: 40px !important;
         }
 
         .stRadio div[role="radiogroup"] label {
@@ -619,10 +566,6 @@ st.markdown(
 
         .stRadio div[role="radiogroup"] label p {
             font-size: 0.65rem !important;
-        }
-
-        .sticky-header-spacer {
-            height: 52px !important;
         }
     }
 
@@ -1479,11 +1422,9 @@ dsu_logo = get_base64_image("logos/dsu.png")
 uvt_logo = get_base64_image("logos/uvt.png")
 fsgc_logo = get_base64_image("logos/fsgc.png")
 
-# Render sticky header with HTML and logos
+# Render sticky header with HTML and logos (NO custom menu button - use Streamlit native)
 st.markdown(f"""
 <div class="sticky-header-container">
-    <label class="mobile-menu-btn" for="sidebar-toggle" aria-label="Toggle filters">☰</label>
-    <input type="checkbox" id="sidebar-toggle" class="sidebar-checkbox">
     <div class="header-logo">
         <a href="https://www.dsu.mai.gov.ro/" target="_blank" style="display: flex; align-items: center;">
             <img src="data:image/png;base64,{dsu_logo}" alt="DSU" style="height: 50px; width: auto; border-radius: 4px; cursor: pointer;">
@@ -1503,66 +1444,6 @@ st.markdown(f"""
     </div>
 </div>
 <div class="sticky-header-spacer"></div>
-""", unsafe_allow_html=True)
-
-# Desktop-only: force sidebar visible
-st.markdown("""
-<style>
-/* Checkbox hack for mobile sidebar toggle */
-.sidebar-checkbox {
-    display: none !important;
-}
-
-@media (max-width: 768px) {
-    /* When checkbox is checked, show sidebar */
-    .sidebar-checkbox:checked ~ .sticky-header-spacer ~ div section[data-testid="stSidebar"],
-    body:has(.sidebar-checkbox:checked) section[data-testid="stSidebar"] {
-        transform: translateX(0) !important;
-        visibility: visible !important;
-    }
-    
-    /* Add overlay when sidebar is open */
-    body:has(.sidebar-checkbox:checked)::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 999997;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Force sidebar visible with JavaScript (desktop only)
-st.markdown("""
-<script>
-// Desktop-only: force sidebar visible
-(function forceSidebarDesktop() {
-    if (window.innerWidth > 768) {
-        const sidebar = document.querySelector('[data-testid="stSidebar"]');
-        if (sidebar) {
-            sidebar.style.cssText = 'display: block !important; visibility: visible !important; opacity: 1 !important; width: 21rem !important; margin-left: 0 !important; transform: none !important; position: relative !important;';
-            sidebar.removeAttribute('aria-hidden');
-            sidebar.removeAttribute('data-collapsed');
-            
-            // Hide ALL buttons in sidebar header area
-            const buttons = sidebar.querySelectorAll('button');
-            buttons.forEach(btn => {
-                const parent = btn.parentElement;
-                if (parent && (parent.tagName === 'HEADER' || btn.getAttribute('kind') === 'header')) {
-                    btn.style.display = 'none';
-                    btn.style.visibility = 'hidden';
-                    btn.style.pointerEvents = 'none';
-                }
-            });
-        }
-    }
-    setTimeout(forceSidebarDesktop, 100);
-})();
-</script>
 """, unsafe_allow_html=True)
 
 # Hidden radio for page selection (styled to appear in header area)
@@ -1657,7 +1538,38 @@ if page == "Rețea parteneri":
     </div>
     """, unsafe_allow_html=True)
 
-    # Use Streamlit sidebar for filters
+    # Mobile-only warning message (hidden on desktop via CSS)
+    st.markdown("""
+    <style>
+    .mobile-only-warning {
+        display: none !important;
+    }
+    @media (max-width: 768px) {
+        .mobile-only-warning {
+            display: flex !important;
+            background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%);
+            border: 1px solid rgba(251, 191, 36, 0.3);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin: 8px;
+            margin-bottom: 12px;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+    </style>
+    <div class="mobile-only-warning">
+        <span style="font-size: 1.2rem;">📱</span>
+        <div>
+            <div style="font-size: 0.8rem; font-weight: 600; color: #fbbf24; margin-bottom: 4px;">Versiune mobilă limitată</div>
+            <div style="font-size: 0.7rem; color: #cbd5e1; line-height: 1.4;">
+                Pentru experiența completă cu toate funcționalitățile, vă recomandăm să accesați aplicația de pe un computer sau tabletă.
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Use Streamlit sidebar for filters (desktop)
     with st.sidebar:
         # Get selected partner info first
         selected_id = st.session_state["selected_id"]
@@ -2059,8 +1971,46 @@ if page == "Rețea parteneri":
             hierarchical=False
         )
 
+    # Add mobile network container with scroll control
+    st.markdown("""
+    <style>
+    @media (max-width: 768px) {
+        /* Network container - limit height to prevent scroll trap */
+        .network-container {
+            max-height: 55vh;
+            overflow: hidden;
+            border-radius: 12px;
+            margin-bottom: 16px;
+            position: relative;
+        }
+        
+        .network-container::after {
+            content: "Pinch para zoom • Drag para mover";
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: #94a3b8;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            pointer-events: none;
+        }
+        
+        .network-container iframe {
+            max-height: 55vh !important;
+            pointer-events: auto;
+        }
+    }
+    </style>
+    <div class="network-container">
+    """, unsafe_allow_html=True)
+
     # Render the graph
     return_value = agraph(nodes=final_nodes, edges=final_edges, config=config)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # Handle clicking on nodes
     if return_value:
@@ -2440,7 +2390,7 @@ elif page == "Despre proiect":
                 Bogdan Doboșeru<br>
                 Laurențiu Florea<br>
                 Andrei Galescu<br>
-                lexandru Poliac-Seres<br>
+                Alexandru Poliac-Seres<br>
                 Briana Toader<br>
             </div>
         </div>
