@@ -1202,15 +1202,15 @@ st.markdown(
         background: rgba(15, 23, 42, 0.35);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 14px;
-        padding: 14px 14px 10px 14px;
+        padding: 10px 12px 8px 12px;
         margin: 10px 12px 12px 12px;
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     }
 
     .filter-bar .filter-section-title {
         margin-top: 0 !important;
-        margin-bottom: 6px !important;
-        font-size: 0.7rem;
+        margin-bottom: 4px !important;
+        font-size: 0.65rem;
         letter-spacing: 0.6px;
     }
 
@@ -1218,7 +1218,18 @@ st.markdown(
         background: rgba(255, 255, 255, 0.06) !important;
         border: 1px solid rgba(255, 255, 255, 0.14) !important;
         border-radius: 12px !important;
-        min-height: 42px !important;
+        min-height: 38px !important;
+    }
+
+    .filter-bar div[data-baseweb="tag"] {
+        padding: 4px 8px !important;
+        font-size: 0.7rem !important;
+    }
+
+    .filter-bar .stButton > button {
+        padding: 6px 10px !important;
+        font-size: 0.75rem !important;
+        min-height: 36px !important;
     }
 
     .filter-bar details[data-testid="stExpander"] {
@@ -1613,7 +1624,6 @@ if page == "Rețea parteneri":
 
     # Filters bar (under the menu)
     st.markdown('<div class="filter-bar">', unsafe_allow_html=True)
-    st.markdown('<div class="filter-section-title">Filtre</div>', unsafe_allow_html=True)
 
     def on_search_change():
         selected_name = st.session_state["search_box"]
@@ -1661,10 +1671,9 @@ if page == "Rețea parteneri":
     else:
         special_index = 0
 
-    c_search, c_entity, c_special, c_domains = st.columns([1.3, 1.1, 1.1, 1.5])
-
-    with c_search:
-        st.markdown('<div class="filter-section-title" style="margin-top: 0;">Caută partener</div>', unsafe_allow_html=True)
+    row1_a, row1_b, row1_c = st.columns([1.4, 1.1, 1.1])
+    with row1_a:
+        st.markdown('<div class="filter-section-title">Caută partener</div>', unsafe_allow_html=True)
         st.selectbox(
             "Caută partener:",
             options=partner_names,
@@ -1675,8 +1684,8 @@ if page == "Rețea parteneri":
             label_visibility="collapsed"
         )
 
-    with c_entity:
-        st.markdown('<div class="filter-section-title" style="margin-top: 0;">Tip organizație</div>', unsafe_allow_html=True)
+    with row1_b:
+        st.markdown('<div class="filter-section-title">Tip organizație</div>', unsafe_allow_html=True)
         st.selectbox(
             "Tip organizație:",
             options=entity_options,
@@ -1687,8 +1696,8 @@ if page == "Rețea parteneri":
             label_visibility="collapsed"
         )
 
-    with c_special:
-        st.markdown('<div class="filter-section-title" style="margin-top: 0;">Parteneri speciali</div>', unsafe_allow_html=True)
+    with row1_c:
+        st.markdown('<div class="filter-section-title">Parteneri speciali</div>', unsafe_allow_html=True)
         st.selectbox(
             "Parteneri speciali:",
             options=special_options,
@@ -1698,8 +1707,9 @@ if page == "Rețea parteneri":
             label_visibility="collapsed"
         )
 
-    with c_domains:
-        st.markdown('<div class="filter-section-title" style="margin-top: 0;">Domenii</div>', unsafe_allow_html=True)
+    row2_a, row2_b = st.columns([2.2, 1])
+    with row2_a:
+        st.markdown('<div class="filter-section-title">Domenii</div>', unsafe_allow_html=True)
         with st.expander("Selectează domenii", expanded=False):
             d1, d2 = st.columns(2)
             if d1.button("Toate", use_container_width=True, key="sel_all"):
@@ -1719,6 +1729,18 @@ if page == "Rețea parteneri":
                 on_change=on_domains_change,
                 label_visibility="collapsed"
             )
+
+    with row2_b:
+        st.markdown('<div class="filter-section-title">Acțiuni rapide</div>', unsafe_allow_html=True)
+        if st.button("Resetează filtre", use_container_width=True, key="reset_all_filters"):
+            st.session_state["entity_filter"] = None
+            st.session_state["special_filter"] = None
+            st.session_state["filter_domains"] = all_domain_labels
+            st.session_state["domain_filter_select"] = all_domain_labels
+            st.session_state["entity_filter_select"] = "Toate tipurile"
+            st.session_state["special_filter_select"] = "Toți partenerii"
+            st.session_state["selected_id"] = None
+            st.rerun()
 
     st.markdown('</div>', unsafe_allow_html=True)
     st.divider()
@@ -1854,7 +1876,7 @@ if page == "Rețea parteneri":
         final_nodes.append(Node(
             id=hub_id,
             label=info_hub["label"][:30] + "..." if len(info_hub["label"]) > 30 else info_hub["label"],
-            size=48,
+            size=54,
             shape="dot" if info_hub["type"] == "Partner" else "diamond",
             color="#dc2626",
             font=hub_font_style,
@@ -1863,7 +1885,7 @@ if page == "Rețea parteneri":
         ))
 
         count = len(leaf_ids)
-        radius = 220
+        radius = 180
 
         for i, nid in enumerate(leaf_ids):
             info = nodes_data[nid]
@@ -1881,7 +1903,7 @@ if page == "Rețea parteneri":
             label = info["label"][:25] + "..." if len(info["label"]) > 25 else info["label"]
 
             final_nodes.append(Node(
-                id=nid, label=label, size=26,
+                id=nid, label=label, size=30,
                 shape="dot" if info["type"] == "Partner" else "diamond",
                 color=color, font=common_font_style,
                 title=info["label"],
@@ -1908,19 +1930,23 @@ if page == "Rețea parteneri":
                 "zoomView": False,
                 "dragNodes": False,
                 "hover": True,
-                "hoverConnectedEdges": True
+                "hoverConnectedEdges": True,
+                "selectConnectedEdges": True,
+                "tooltipDelay": 0
             },
             nodes={
                 "color": {
                     "highlight": "#f87171",
                     "hover": "#f87171"
-                }
+                },
+                "borderWidthSelected": 3
             },
             edges={
                 "color": {
                     "highlight": "#f87171",
                     "hover": "rgba(248, 113, 113, 0.9)"
-                }
+                },
+                "width": 2
             }
         )
 
@@ -1965,7 +1991,7 @@ if page == "Rețea parteneri":
         domain_list = list(visible_domain_ids)
         num_domains = len(domain_list)
         cols = 1
-        spacing = 180
+        spacing = 140
 
         if num_domains > 0:
             cols = math.ceil(math.sqrt(num_domains))
@@ -1980,7 +2006,7 @@ if page == "Rețea parteneri":
                 label = nodes_data[nid]["label"][:20] + "..." if len(nodes_data[nid]["label"]) > 20 else nodes_data[nid]["label"]
 
                 final_nodes.append(Node(
-                    id=nid, label=label, size=34,
+                    id=nid, label=label, size=40,
                     shape="diamond", color="#dc2626", font=hub_font_style,
                     title=nodes_data[nid]["label"],
                     x=x, y=y
@@ -1997,16 +2023,16 @@ if page == "Rețea parteneri":
                 col = domain_idx % cols
                 base_x = (col - cols / 2) * spacing
                 base_y = (row - rows / 2) * spacing
-                x = base_x + random.uniform(-70, 70)
-                y = base_y + random.uniform(-70, 70)
+                x = base_x + random.uniform(-55, 55)
+                y = base_y + random.uniform(-55, 55)
             else:
-                x = random.uniform(-160, 160)
-                y = random.uniform(-160, 160)
+                x = random.uniform(-130, 130)
+                y = random.uniform(-130, 130)
 
             label = info["label"][:20] + "..." if len(info["label"]) > 20 else info["label"]
 
             final_nodes.append(Node(
-                id=nid, label=label, size=24,
+                id=nid, label=label, size=28,
                 shape="dot", color=color, font=common_font_style,
                 title=info["label"],
                 x=x, y=y
@@ -2027,24 +2053,33 @@ if page == "Rețea parteneri":
             hierarchical=False,
             nodeHighlightBehavior=True,
             highlightColor="#dc2626",
+            layout={"randomSeed": 42},
+            physics={
+                "enabled": True,
+                "stabilization": {"enabled": True, "iterations": 200}
+            },
             interaction={
                 "dragView": False,
                 "zoomView": False,
                 "dragNodes": False,
                 "hover": True,
-                "hoverConnectedEdges": True
+                "hoverConnectedEdges": True,
+                "selectConnectedEdges": True,
+                "tooltipDelay": 0
             },
             nodes={
                 "color": {
                     "highlight": "#f87171",
                     "hover": "#f87171"
-                }
+                },
+                "borderWidthSelected": 3
             },
             edges={
                 "color": {
                     "highlight": "#f87171",
                     "hover": "rgba(248, 113, 113, 0.9)"
-                }
+                },
+                "width": 2
             }
         )
 
