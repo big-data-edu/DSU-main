@@ -45,24 +45,110 @@ export function initAbout() {
                         dintre parteneri și domeniile lor de activitate.
                     </div>
                 </div>
+
+                <div class="about-card">
+                    <div class="card-title">Surse și date</div>
+                    <div class="card-text">
+                        <p style="margin-bottom: 14px; line-height: 1.7;">
+                            Datele utilizate în această aplicație au fost furnizate de către Departamentul pentru
+                            Situații de Urgență (DSU) sau extrase manual din diverse acte normative, rapoarte oficiale
+                            și articole de presă, în scopul simplificării și accesibilizării informațiilor pentru publicul larg.
+                        </p>
+
+                        <div style="margin-bottom:16px; padding:12px; background:rgba(220,38,38,0.08); border-radius:8px; border:1px solid rgba(220,38,38,0.2); text-align:center;">
+                            <img src="logos/dsu.png" alt="DSU" style="height:56px; border-radius:6px; margin-bottom:8px;"><br>
+                            <span style="font-size:0.82rem; color:var(--text-muted);">Departamentul pentru Situații de Urgență</span>
+                        </div>
+
+                        <div class="source-category">
+                            <div class="source-category-title">Hotărâri CNSU</div>
+                            <a class="source-link" href="https://www.dsu.mai.gov.ro/legislatie-hotarari" target="_blank">dsu.mai.gov.ro/legislatie-hotarari</a>
+                            <a class="source-link" href="https://isubif.ro/local/hotarari-ale-cnsu/" target="_blank">isubif.ro/local/hotarari-ale-cnsu</a>
+                        </div>
+
+                        <div class="source-category">
+                            <div class="source-category-title">Știri</div>
+                            <a class="source-link" href="https://adevarul.ro/politica/un-an-razboi-ucraina-romania-gestionat-situatia-2244909.html" target="_blank">Adevărul &ndash; Un an de război: România și gestionarea situației</a>
+                            <a class="source-link" href="https://romania.europalibera.org/a/consiliul-fiscal-romania-a-sprijinit-ucraina-cu-1-5-miliarde-de-euro-de-la-inceputul-razboiului/33520491.html" target="_blank">Europa Liberă &ndash; România a sprijinit Ucraina cu 1.5 mld EUR</a>
+                            <a class="source-link" href="https://euneighbourseast.eu/ro/news/explainers/cum-ajuta-ue-ucraina-de-la-sanctiuni-la-ajutor-militar-si-umanitar/" target="_blank">EU Neighbours East &ndash; Cum ajută UE Ucraina</a>
+                        </div>
+
+                        <div class="source-category">
+                            <div class="source-category-title">Cifre</div>
+                            <a class="source-link" href="https://expertforum.ro/wp-content/uploads/2023/07/Problemele-refugiatilor-ucrainieni.pdf" target="_blank">Expert Forum &ndash; Problemele refugiaților ucraineni (PDF)</a>
+                            <a class="source-link" href="https://protectieucraina.gov.ro/1/analize-si-statistici/" target="_blank">protectieucraina.gov.ro &ndash; Analize și statistici</a>
+                            <a class="source-link" href="https://cdmir.ro/2023/08/03/analiza-cdmir/" target="_blank">CDMIR &ndash; Analiză</a>
+                        </div>
+
+                        <div class="source-category">
+                            <div class="source-category-title">Raport de activitate DSU</div>
+                            <a class="source-link" href="https://www.dsu.mai.gov.ro/rapoarte-de-activitate/" target="_blank">dsu.mai.gov.ro/rapoarte-de-activitate</a>
+                        </div>
+
+                        <div class="source-category">
+                            <div class="source-category-title">Situația refugiaților (date și grafice)</div>
+                            <a class="source-link" href="https://data.unhcr.org/en/documents/details/114603" target="_blank">UNHCR &ndash; Documente</a>
+                            <a class="source-link" href="https://data.unhcr.org/en/situations/ukraine/location/10782" target="_blank">UNHCR &ndash; Situația Ucraina / România</a>
+                        </div>
+
+                        <div class="source-category">
+                            <div class="source-category-title">Cheltuieli</div>
+                            <a class="source-link" href="https://mfe.gov.ro/contract-de-finantare-de-100-de-milioane-de-euro-pentru-decontarea-cheltuielilor-cu-asistenta-acordata-refugiatilor-din-ucraina-semnat-intre-mipe-si-mai/" target="_blank">MFE &ndash; Contract de finanțare 100 mil EUR pentru refugiați</a>
+                        </div>
+
+                        <div class="source-category">
+                            <div class="source-category-title">Altele</div>
+                            <a class="source-link" href="https://www.consilium.europa.eu/ro/policies/eu-solidarity-ukraine/" target="_blank">Consiliul European &ndash; Solidaritatea UE cu Ucraina</a>
+                            <a class="source-link" href="https://sgg.gov.ro/1/wp-content/uploads/2022/05/Raport-Resurse-refugiati-Ucraina.pdf" target="_blank">SGG &ndash; Raport resurse refugiați Ucraina (PDF)</a>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div>
                 <div class="about-team-card">
-                    <div class="card-title">Echipa proiectului</div>
+                    <div class="card-title">Parteneri și realizatori</div>
                     <div class="card-text">
-                        <strong>Universitatea de Vest din Timișoara</strong><br>
-                        Facultatea de Științe ale Guvernării și Comunicării
+                        <strong>Suport educațional:</strong><br>
+                        <a href="https://www.uvt.ro" target="_blank">Universitatea de Vest din Timișoara (UVT)</a><br>
+                        <a href="https://fsgc.uvt.ro" target="_blank">Facultatea de Științe ale Guvernării și Comunicării (FSGC)</a>
+                        <br><br>
+                        <strong>Proiect realizat de:</strong><br>
+                        <a href="https://fablabtm.ro" target="_blank">FabLab Timișoara</a> sub umbrela <a href="https://connectm.ro" target="_blank">ConnecTM</a>
                         <br><br>
                         <strong>Coordonator proiect:</strong><br>
                         Lect. univ. dr. Silvia Fierăscu
                         <br><br>
-                        <strong>Proiect realizat de:</strong><br>
+                        <strong>Echipa:</strong><br>
                         Bogdan Doboșeru<br>
                         Laurențiu Florea<br>
                         Andrei Galescu<br>
                         Alexandru Poliac-Seres<br>
                         Briana Toader
+                    </div>
+
+                    <div class="about-logos">
+                        <a href="https://www.uvt.ro" target="_blank" title="Universitatea de Vest din Timișoara">
+                            <img src="logos/uvt.png" alt="UVT">
+                        </a>
+                        <a href="https://fsgc.uvt.ro" target="_blank" title="FSGC">
+                            <img src="logos/fsgc.png" alt="FSGC">
+                        </a>
+                        <a href="https://www.dsu.mai.gov.ro" target="_blank" title="DSU">
+                            <img src="logos/dsu.png" alt="DSU">
+                        </a>
+                    </div>
+                </div>
+
+                <div class="about-card">
+                    <div class="card-title">Mulțumiri</div>
+                    <div class="card-text">
+                        Cu deosebită recunoștință față de Departamentul pentru Situații de Urgență (DSU)
+                        pentru furnizarea datelor și suportul acordat pe parcursul proiectului.
+                        <br><br>
+                        În special, mulțumim domnului <strong>Mihai Lupu</strong>, Director de cabinet al
+                        Secretarului de Stat, Șef al Departamentului pentru Situații de Urgență, pentru
+                        sprijinul și deschiderea în realizarea acestei inițiative.
                     </div>
                 </div>
 
@@ -70,26 +156,15 @@ export function initAbout() {
                     <div class="card-title">Contact</div>
                     <div class="card-text">
                         Pentru întrebări sau sugestii:<br>
-                        <a href="mailto:alexandru.poliac03@e-uvt.ro" style="color: var(--accent); text-decoration: none;">alexandru.poliac03@e-uvt.ro</a>
+                        <a href="mailto:alexandru.poliac03@e-uvt.ro">alexandru.poliac03@e-uvt.ro</a>
                     </div>
                 </div>
 
                 <div class="about-card">
                     <div class="card-title">Versiune</div>
                     <div class="card-text">
-                        v2.0 – Ianuarie 2025<br>
+                        v0.2 &ndash; Ianuarie 2026<br>
                         <span style="font-size: 0.82rem; color: var(--text-dim);">Ultima actualizare a datelor</span>
-                    </div>
-                </div>
-
-                <div class="about-card">
-                    <div class="card-title">Tehnologii utilizate</div>
-                    <div class="card-text">
-                        <strong>Vizualizare graf:</strong> D3.js v7<br>
-                        <strong>Grafice statistice:</strong> Plotly.js<br>
-                        <strong>Interfață:</strong> Vanilla JavaScript<br>
-                        <strong>Stilizare:</strong> CSS3 modern<br>
-                        <strong>Date:</strong> CSV / JSON static
                     </div>
                 </div>
             </div>

@@ -38,7 +38,10 @@ async function init() {
         setupNavigation();
 
         // Set up mobile menu
-        setupMobileMenu();
+        setupMobileNav();
+
+        // Set up filter bar visibility
+        setupFilterBarVisibility();
 
         // Hide loading screen
         document.getElementById('loading-screen').classList.add('hidden');
@@ -47,9 +50,9 @@ async function init() {
         console.error('Failed to initialize app:', err);
         document.getElementById('loading-screen').innerHTML = `
             <div class="loader-content">
-                <div style="color: #f87171; font-size: 1.1rem; margin-bottom: 12px;">Eroare la încărcarea datelor</div>
+                <div style="color: #f87171; font-size: 1.1rem; margin-bottom: 12px;">Eroare la incarcarea datelor</div>
                 <div style="color: #94a3b8; font-size: 0.85rem;">${err.message}</div>
-                <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#dc2626;border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:inherit">Reîncearcă</button>
+                <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#dc2626;border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:inherit">Reincearca</button>
             </div>
         `;
     }
@@ -58,14 +61,17 @@ async function init() {
 // ---- NAVIGATION ----
 
 function setupNavigation() {
-    // Desktop nav buttons
-    document.querySelectorAll('#main-nav .nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => navigateTo(btn.dataset.page));
+    // Desktop nav links
+    document.querySelectorAll('#main-nav .nav-link').forEach(link => {
+        link.addEventListener('click', () => navigateTo(link.dataset.page));
     });
 
-    // Mobile nav buttons
-    document.querySelectorAll('#mobile-nav-bar .nav-btn').forEach(btn => {
-        btn.addEventListener('click', () => navigateTo(btn.dataset.page));
+    // Mobile nav links
+    document.querySelectorAll('#mobile-nav-dropdown .mobile-nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+            navigateTo(link.dataset.page);
+            closeMobileNav();
+        });
     });
 }
 
@@ -73,25 +79,22 @@ function navigateTo(page) {
     if (page === currentPage) return;
     currentPage = page;
 
-    // Update nav buttons (both desktop and mobile)
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.page === page);
+    // Update desktop nav links
+    document.querySelectorAll('#main-nav .nav-link').forEach(link => {
+        link.classList.toggle('active', link.dataset.page === page);
+    });
+
+    // Update mobile nav links
+    document.querySelectorAll('#mobile-nav-dropdown .mobile-nav-link').forEach(link => {
+        link.classList.toggle('active', link.dataset.page === page);
     });
 
     // Show/hide pages
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(`page-${page}`).classList.add('active');
 
-    // Show/hide sidebar (only on network page)
-    const sidebar = document.getElementById('sidebar');
-    if (page === 'network') {
-        sidebar.style.display = '';
-    } else {
-        sidebar.style.display = 'none';
-        // Close mobile sidebar if open
-        sidebar.classList.remove('open');
-        document.getElementById('sidebar-overlay').classList.add('hidden');
-    }
+    // Show/hide filter bar (only on network page)
+    updateFilterBarVisibility(page);
 
     // Show/hide stats overlay
     const statsOverlay = document.getElementById('stats-overlay');
@@ -99,6 +102,18 @@ function navigateTo(page) {
         statsOverlay.style.display = '';
     } else {
         statsOverlay.style.display = 'none';
+    }
+
+    // Show/hide floating legend
+    const legend = document.getElementById('floating-legend');
+    if (legend) {
+        legend.style.display = page === 'network' ? '' : 'none';
+    }
+
+    // Show/hide nav help
+    const navHelp = document.getElementById('nav-help-btn');
+    if (navHelp) {
+        navHelp.style.display = page === 'network' ? '' : 'none';
     }
 
     // Lazy init statistics
@@ -111,34 +126,59 @@ function navigateTo(page) {
     if (page === 'statistics') {
         setTimeout(() => window.dispatchEvent(new Event('resize')), 150);
     }
-
-    // Close mobile menu
-    closeMobileMenu();
 }
 
-// ---- MOBILE MENU ----
+// ---- FILTER BAR VISIBILITY ----
 
-function setupMobileMenu() {
-    const menuBtn = document.getElementById('mobile-menu-btn');
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
+function setupFilterBarVisibility() {
+    updateFilterBarVisibility(currentPage);
+}
 
-    menuBtn.addEventListener('click', () => {
-        const isOpen = sidebar.classList.contains('open');
+function updateFilterBarVisibility(page) {
+    const filterBar = document.getElementById('filter-bar');
+    const mobileFilterPanel = document.getElementById('mobile-filter-panel');
+
+    if (page === 'network') {
+        filterBar.style.display = '';
+    } else {
+        filterBar.style.display = 'none';
+        if (mobileFilterPanel) {
+            mobileFilterPanel.classList.add('hidden');
+        }
+    }
+}
+
+// ---- MOBILE NAV ----
+
+function setupMobileNav() {
+    const toggle = document.getElementById('mobile-nav-toggle');
+    const dropdown = document.getElementById('mobile-nav-dropdown');
+
+    if (!toggle || !dropdown) return;
+
+    toggle.addEventListener('click', () => {
+        const isOpen = !dropdown.classList.contains('hidden');
         if (isOpen) {
-            closeMobileMenu();
+            closeMobileNav();
         } else {
-            sidebar.classList.add('open');
-            overlay.classList.remove('hidden');
+            dropdown.classList.remove('hidden');
+            toggle.classList.add('active');
         }
     });
 
-    overlay.addEventListener('click', closeMobileMenu);
+    // Close on outside click
+    document.addEventListener('click', (e) => {
+        if (!toggle.contains(e.target) && !dropdown.contains(e.target)) {
+            closeMobileNav();
+        }
+    });
 }
 
-function closeMobileMenu() {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('sidebar-overlay').classList.add('hidden');
+function closeMobileNav() {
+    const dropdown = document.getElementById('mobile-nav-dropdown');
+    const toggle = document.getElementById('mobile-nav-toggle');
+    if (dropdown) dropdown.classList.add('hidden');
+    if (toggle) toggle.classList.remove('active');
 }
 
 // ---- START ----
