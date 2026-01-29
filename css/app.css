@@ -268,11 +268,10 @@ body {
     right: 0;
     z-index: 9000;
     height: var(--filter-bar-height);
-    background: rgba(10, 14, 26, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(10, 14, 26, 0.98);
     border-bottom: 1px solid var(--border-subtle);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    overflow: visible;
 }
 
 .fb-inner {
@@ -282,6 +281,7 @@ body {
     padding: 0 16px;
     gap: 10px;
     max-width: 100%;
+    overflow: visible;
 }
 
 
@@ -330,16 +330,17 @@ body {
 }
 
 .search-results {
-    position: fixed;
-    top: calc(var(--header-height) + var(--filter-bar-height) + 4px);
-    left: 16px;
-    width: 200px;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
     background: rgba(10, 14, 26, 0.98);
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-sm);
     max-height: 280px;
     overflow-y: auto;
-    z-index: 20000;
+    z-index: 99999;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
 }
 
@@ -429,6 +430,7 @@ body {
 .fb-dropdown-wrap {
     position: relative;
     flex-shrink: 0;
+    overflow: visible;
 }
 
 .fb-dropdown-btn {
@@ -468,9 +470,10 @@ body {
 }
 
 .fb-dropdown-panel {
-    position: fixed;
-    top: calc(var(--header-height) + var(--filter-bar-height) + 4px);
-    left: auto;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
     width: 320px;
     max-height: 400px;
     overflow-y: auto;
@@ -478,7 +481,7 @@ body {
     border: 1px solid var(--border-subtle);
     border-radius: var(--radius-md);
     padding: 12px;
-    z-index: 20000;
+    z-index: 99999;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
     scrollbar-width: thin;
     scrollbar-color: rgba(255,255,255,0.1) transparent;
@@ -1674,12 +1677,6 @@ body {
         flex: 1;
         width: auto;
         min-width: 120px;
-    }
-
-    .search-results {
-        left: 12px !important;
-        right: 12px !important;
-        width: auto !important;
     }
 
     /* Stats overlay on mobile */

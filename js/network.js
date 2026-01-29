@@ -632,11 +632,6 @@ function setupDomainDropdown() {
     const overlay = document.getElementById('dropdown-overlay');
     if (!btn || !panel) return;
 
-    function positionPanel() {
-        const btnRect = btn.getBoundingClientRect();
-        panel.style.left = btnRect.left + 'px';
-    }
-
     btn.addEventListener('click', (e) => {
         e.stopPropagation();
         const isOpen = !panel.classList.contains('hidden');
@@ -644,7 +639,6 @@ function setupDomainDropdown() {
             panel.classList.add('hidden');
             overlay?.classList.add('hidden');
         } else {
-            positionPanel();
             panel.classList.remove('hidden');
             overlay?.classList.remove('hidden');
         }
@@ -719,18 +713,6 @@ function buildSearch(networkData) {
         .map(([id, n]) => ({ id, label: n.label }))
         .sort((a, b) => a.label.localeCompare(b.label));
 
-    function positionResults() {
-        const inputRect = input.getBoundingClientRect();
-        resultsEl.style.left = inputRect.left + 'px';
-        resultsEl.style.width = inputRect.width + 'px';
-    }
-
-    function showResults(html) {
-        resultsEl.innerHTML = html;
-        positionResults();
-        resultsEl.classList.remove('hidden');
-    }
-
     input.addEventListener('input', () => {
         const query = input.value.toLowerCase().trim();
         if (query.length < 2) {
@@ -740,13 +722,15 @@ function buildSearch(networkData) {
 
         const matches = partners.filter(p => p.label.toLowerCase().includes(query)).slice(0, 10);
         if (matches.length === 0) {
-            showResults('<div class="search-result-item" style="color:var(--text-dim)">Niciun rezultat</div>');
+            resultsEl.innerHTML = '<div class="search-result-item" style="color:var(--text-dim)">Niciun rezultat</div>';
+            resultsEl.classList.remove('hidden');
             return;
         }
 
-        showResults(matches.map(m =>
+        resultsEl.innerHTML = matches.map(m =>
             `<div class="search-result-item" data-id="${m.id}">${m.label}</div>`
-        ).join(''));
+        ).join('');
+        resultsEl.classList.remove('hidden');
 
         resultsEl.querySelectorAll('.search-result-item[data-id]').forEach(item => {
             item.addEventListener('click', () => {
@@ -768,13 +752,6 @@ function buildSearch(networkData) {
                 resultsEl.classList.add('hidden');
             });
         });
-    });
-
-    // Also position on focus in case of window resize
-    input.addEventListener('focus', () => {
-        if (!resultsEl.classList.contains('hidden')) {
-            positionResults();
-        }
     });
 
     document.addEventListener('click', (e) => {
