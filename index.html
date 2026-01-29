@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ecosistemul Partenerilor DSU</title>
+    <meta name="description" content="Vizualizare interactivă a rețelei de parteneriate DSU – Departamentul pentru Situații de Urgență din România">
+    <link rel="icon" type="image/png" href="logos/dsu.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
+    <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+    <!-- ====== NAVBAR ====== -->
+    <header id="app-header">
+        <div class="header-left">
+            <a href="https://www.dsu.mai.gov.ro/" target="_blank" class="header-logo-link">
+                <img src="logos/dsu.png" alt="DSU" class="header-logo-img">
+            </a>
+            <span class="header-brand">Ecosistemul partenerilor DSU</span>
+        </div>
+
+        <nav id="main-nav">
+            <a class="nav-link active" data-page="network">Rețea parteneri</a>
+            <a class="nav-link" data-page="statistics">Statistici</a>
+            <a class="nav-link" data-page="about">Despre proiect</a>
+        </nav>
+
+        <div class="header-right">
+            <div class="header-partner-logos">
+                <a href="https://www.uvt.ro/" target="_blank"><img src="logos/uvt.png" alt="UVT"></a>
+                <a href="https://connectm.uvt.ro/" target="_blank"><img src="logos/S_Logo Fablab (All White) Horizontal.png" alt="Social Fabrics Research Lab"></a>
+            </div>
+            <button id="mobile-nav-toggle" class="mobile-nav-toggle" aria-label="Menu">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <!-- ====== MOBILE NAV DROPDOWN ====== -->
+    <div id="mobile-nav-dropdown" class="mobile-nav-dropdown hidden">
+        <a class="mobile-nav-link active" data-page="network">Rețea parteneri</a>
+        <a class="mobile-nav-link" data-page="statistics">Statistici</a>
+        <a class="mobile-nav-link" data-page="about">Despre proiect</a>
+    </div>
+
+    <!-- ====== FILTER BAR (network page only) ====== -->
+    <div id="filter-bar">
+        <div class="fb-inner">
+            <!-- Search -->
+            <div class="fb-search">
+                <svg class="fb-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <input type="text" id="search-input" placeholder="Caută partener..." autocomplete="off">
+                <div id="search-results" class="search-results hidden"></div>
+            </div>
+
+            <div class="fb-separator"></div>
+
+            <!-- Entity type dropdown -->
+            <div class="fb-dropdown-wrap">
+                <button class="fb-dropdown-btn" id="entity-dropdown-btn">
+                    Tip organizație
+                    <span class="fb-dropdown-count" id="entity-count-label"></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="fb-dropdown-panel hidden" id="entity-panel">
+                    <div id="entity-filters"></div>
+                </div>
+            </div>
+
+            <div class="fb-separator"></div>
+
+            <!-- Domain dropdown -->
+            <div class="fb-dropdown-wrap">
+                <button class="fb-dropdown-btn" id="domain-dropdown-btn">
+                    Domenii
+                    <span class="fb-dropdown-count" id="domain-count-label"></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="fb-dropdown-panel hidden" id="domain-panel">
+                    <div class="fb-panel-header">
+                        <button id="select-all-domains" class="fb-panel-btn">Selectează tot</button>
+                        <button id="select-no-domains" class="fb-panel-btn">Deselectează tot</button>
+                    </div>
+                    <div id="domain-filters"></div>
+                </div>
+            </div>
+
+            <div class="fb-separator"></div>
+
+            <!-- Special filters dropdown -->
+            <div class="fb-dropdown-wrap">
+                <button class="fb-dropdown-btn" id="special-dropdown-btn">
+                    Alte filtre
+                    <span class="fb-dropdown-count" id="special-count-label"></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="fb-dropdown-panel hidden" id="special-panel">
+                    <div id="special-filters"></div>
+                </div>
+            </div>
+
+            <!-- Mobile filter toggle -->
+            <button id="mobile-filter-toggle" class="fb-mobile-toggle">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+                Filtre
+            </button>
+        </div>
+    </div>
+
+    <!-- Mobile filter panel (slides down) -->
+    <div id="mobile-filter-panel" class="mobile-filter-panel hidden">
+        <div id="mobile-entity-filters" class="mfp-section"></div>
+        <div id="mobile-domain-filters" class="mfp-section"></div>
+        <div id="mobile-special-filters" class="mfp-section"></div>
+    </div>
+
+    <!-- ====== APP SHELL ====== -->
+    <div id="app-container">
+        <main id="main-content">
+            <!-- ====== NETWORK PAGE ====== -->
+            <div id="page-network" class="page active">
+                <!-- Stats Overlay (bottom-right, no legend) -->
+                <div id="stats-overlay">
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-partners">0</div>
+                        <div class="stat-label">Parteneri</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-domains">0</div>
+                        <div class="stat-label">Domenii</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="stat-connections">0</div>
+                        <div class="stat-label">Conexiuni</div>
+                    </div>
+                </div>
+
+                <!-- Graph Container -->
+                <div id="graph-container">
+                    <svg id="network-svg"></svg>
+                </div>
+
+                <!-- Partner Detail Card (floating bottom) -->
+                <div id="partner-detail" class="hidden">
+                    <button id="close-detail" class="close-detail-btn">&times;</button>
+                    <div id="detail-content"></div>
+                </div>
+
+                <!-- Tooltip (follows cursor) -->
+                <div id="tooltip" class="hidden"></div>
+
+                <!-- Floating Legend (bottom center) -->
+                <div id="floating-legend">
+                    <button id="legend-toggle" class="legend-toggle-btn">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                        Legendă
+                    </button>
+                    <div id="legend-panel" class="legend-panel hidden">
+                        <div class="legend-item"><span class="legend-dot" style="background:#8b5cf6"></span><span>Universitate</span></div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#10b981"></span><span>ONG</span></div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#3b82f6"></span><span>Instituție de stat</span></div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#f59e0b"></span><span>Companie privată</span></div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#ec4899"></span><span>Media</span></div>
+                        <div class="legend-item"><span class="legend-dot" style="background:#14b8a6"></span><span>Org. profesională</span></div>
+                        <div class="legend-item"><span class="legend-diamond"></span><span>Domeniu de activitate</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== STATISTICS PAGE ====== -->
+            <div id="page-statistics" class="page">
+                <div class="page-padded">
+                    <h2 class="page-title">DSU în cifre</h2>
+                    <div class="data-notice">
+                        Date în curs de prelucrare. Ultimele date disponibile sunt din 2024.
+                    </div>
+                    <div class="stats-tabs">
+                        <button class="stats-tab active" data-tab="operational">Operațional și urgențe</button>
+                        <button class="stats-tab" data-tab="medical">Medical și aviație</button>
+                        <button class="stats-tab" data-tab="prevention">Prevenire și parteneri</button>
+                        <button class="stats-tab" data-tab="advanced">Analize avansate</button>
+                    </div>
+                    <div id="tab-operational" class="tab-content active"></div>
+                    <div id="tab-medical" class="tab-content"></div>
+                    <div id="tab-prevention" class="tab-content"></div>
+                    <div id="tab-advanced" class="tab-content"></div>
+                </div>
+            </div>
+
+            <!-- ====== ABOUT PAGE ====== -->
+            <div id="page-about" class="page">
+                <div class="page-padded" id="about-content"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Overlay for closing dropdowns -->
+    <div id="dropdown-overlay" class="hidden"></div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <div class="loader-text">Se încarcă datele...</div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/data.js"></script>
+    <script type="module" src="js/network.js"></script>
+    <script type="module" src="js/statistics.js"></script>
+    <script type="module" src="js/about.js"></script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
