@@ -19,8 +19,9 @@ let hoveredNodeId = null;
 // Filter state
 let filterState = {
     domains: [],
-    entityTypes: [],     // multi-select entity types
-    specialFilter: null  // 'strategic' | 'ukraine' | null
+    entityTypes: [],      // multi-select entity types
+    specialFilter: null,  // backward compat
+    specialFilters: []    // multi-select special filters ['strategic', 'ukraine']
 };
 
 // ---- PUBLIC API ----
@@ -101,7 +102,7 @@ function resizeSVG() {
 
 function rebuildGraph() {
     const { nodes, edges, fonssId } = allNetworkData;
-    const { domains, entityTypes, specialFilter } = filterState;
+    const { domains, entityTypes, specialFilters } = filterState;
 
     // Determine visible domain node IDs
     const visibleDomainIds = new Set();
@@ -123,9 +124,13 @@ function rebuildGraph() {
         // Apply entity type filter (multi-select)
         if (entityTypes.length > 0 && !entityTypes.includes(classifyEntityType(partner.label))) continue;
 
-        // Apply special filter
-        if (specialFilter === 'strategic' && !partner.strategic) continue;
-        if (specialFilter === 'ukraine' && !partner.ukraine) continue;
+        // Apply special filters (multi-select, OR logic)
+        if (specialFilters && specialFilters.length > 0) {
+            let passesSpecial = false;
+            if (specialFilters.includes('strategic') && partner.strategic) passesSpecial = true;
+            if (specialFilters.includes('ukraine') && partner.ukraine) passesSpecial = true;
+            if (!passesSpecial) continue;
+        }
 
         visiblePartners.add(edge.source);
         activeEdges.push(edge);
@@ -133,7 +138,7 @@ function rebuildGraph() {
 
     // If filters active, only show domains that have connections
     let finalDomainIds = visibleDomainIds;
-    if (entityTypes.length > 0 || specialFilter) {
+    if (entityTypes.length > 0 || (specialFilters && specialFilters.length > 0)) {
         const connectedDomains = new Set(activeEdges.map(e => e.target));
         finalDomainIds = new Set([...visibleDomainIds].filter(d => connectedDomains.has(d)));
     }
@@ -255,22 +260,31 @@ function renderGraph(nodes, links) {
 
     // Interaction
     const tooltip = document.getElementById('tooltip');
+    const isMobileDevice = () => window.innerWidth < 768 || 'ontouchstart' in window;
 
     nodeSel.on('mouseenter', function(event, d) {
+        // Skip tooltip on mobile - only show on desktop hover
+        if (isMobileDevice()) return;
         hoveredNodeId = d.id;
         highlightConnections(d, linkSel, nodeSel, labelSel);
         showTooltip(event, d, tooltip);
     })
     .on('mousemove', function(event) {
+        if (isMobileDevice()) return;
         moveTooltip(event, tooltip);
     })
     .on('mouseleave', function() {
+        if (isMobileDevice()) return;
         hoveredNodeId = null;
         resetHighlight(linkSel, nodeSel, labelSel);
         hideTooltip(tooltip);
     })
     .on('click', function(event, d) {
         event.stopPropagation();
+        // On mobile, hide tooltip and just show detail card
+        if (isMobileDevice()) {
+            hideTooltip(tooltip);
+        }
         selectNode(d);
     });
 
@@ -499,7 +513,7 @@ function buildFilters(networkData) {
     buildSpecialFilters(networkData);
     buildSearch(networkData);
     setupMobileFilters(networkData);
-    setupDomainDropdown();
+    setupDropdowns();
 }
 
 function buildEntityFilters(networkData) {
@@ -519,29 +533,33 @@ function buildEntityFilters(networkData) {
     let html = '';
     for (const [type, config] of Object.entries(ENTITY_TYPES)) {
         const count = counts[type] || 0;
-        html += `<button class="entity-pill" data-type="${type}" title="${type}">
-            <span class="entity-dot" style="background:${config.color}"></span>
-            <span class="entity-pill-label">${type}</span>
-            <span class="entity-pill-count">${count}</span>
-        </button>`;
+        html += `<label class="filter-checkbox">
+            <input type="checkbox" value="${type}">
+            <span class="filter-dot" style="background:${config.color}"></span>
+            <span class="filter-label">${type}</span>
+            <span class="filter-count">${count}</span>
+        </label>`;
     }
     container.innerHTML = html;
 
-    // Event listeners (multi-select)
-    container.querySelectorAll('.entity-pill').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const type = btn.dataset.type;
-            btn.classList.toggle('active');
-
-            // Collect active types
-            filterState.entityTypes = [...container.querySelectorAll('.entity-pill.active')]
-                .map(b => b.dataset.type);
-
+    // Event listeners
+    container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+            filterState.entityTypes = [...container.querySelectorAll('input[type="checkbox"]:checked')]
+                .map(c => c.value);
+            updateEntityCountLabel();
             deselectNode();
             rebuildGraph();
             syncMobileFilters();
         });
     });
+}
+
+function updateEntityCountLabel() {
+    const label = document.getElementById('entity-count-label');
+    if (!label) return;
+    const count = filterState.entityTypes.length;
+    label.textContent = count > 0 ? count : '';
 }
 
 function buildDomainFilters(networkData) {
@@ -626,39 +644,41 @@ function updateDomainCountLabel() {
     }
 }
 
-function setupDomainDropdown() {
-    const btn = document.getElementById('domain-dropdown-btn');
-    const panel = document.getElementById('domain-panel');
-    const overlay = document.getElementById('dropdown-overlay');
-    if (!btn || !panel) return;
+function setupDropdowns() {
+    // Setup all filter dropdowns
+    const dropdowns = [
+        { btn: 'entity-dropdown-btn', panel: 'entity-panel' },
+        { btn: 'domain-dropdown-btn', panel: 'domain-panel' },
+        { btn: 'special-dropdown-btn', panel: 'special-panel' }
+    ];
 
-    btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isOpen = !panel.classList.contains('hidden');
-        if (isOpen) {
-            panel.classList.add('hidden');
-            overlay?.classList.add('hidden');
-        } else {
-            panel.classList.remove('hidden');
-            overlay?.classList.remove('hidden');
-        }
+    dropdowns.forEach(({ btn: btnId, panel: panelId }) => {
+        const btn = document.getElementById(btnId);
+        const panel = document.getElementById(panelId);
+        if (!btn || !panel) return;
+
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            // Close other dropdowns first
+            dropdowns.forEach(other => {
+                if (other.panel !== panelId) {
+                    document.getElementById(other.panel)?.classList.add('hidden');
+                }
+            });
+            panel.classList.toggle('hidden');
+        });
+
+        // Prevent clicks inside the panel from closing it
+        panel.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
     });
 
-    // Prevent clicks inside the panel from closing it
-    panel.addEventListener('click', (e) => {
-        e.stopPropagation();
-    });
-
-    overlay?.addEventListener('click', () => {
-        panel.classList.add('hidden');
-        overlay.classList.add('hidden');
-    });
-
-    document.addEventListener('click', (e) => {
-        if (!btn.contains(e.target) && !panel.contains(e.target)) {
-            panel.classList.add('hidden');
-            overlay?.classList.add('hidden');
-        }
+    // Close all on outside click
+    document.addEventListener('click', () => {
+        dropdowns.forEach(({ panel: panelId }) => {
+            document.getElementById(panelId)?.classList.add('hidden');
+        });
     });
 }
 
@@ -676,35 +696,41 @@ function buildSpecialFilters(networkData) {
     }
 
     container.innerHTML = `
-        <button class="special-pill" data-filter="strategic" title="Parteneri strategici - parteneri cu care DSU are protocoale extinse de colaborare">
-            <span class="special-pill-icon">&#9733;</span> Strategici
-            <span class="special-pill-count">${strategicCount}</span>
-        </button>
-        <button class="special-pill" data-filter="ukraine" title="Parteneri implicati in gestionarea crizei din Ucraina">
-            <span class="special-pill-icon-ua">UA</span> Ucraina
-            <span class="special-pill-count">${ukraineCount}</span>
-        </button>
+        <label class="filter-checkbox" title="Parteneri strategici - parteneri cu care DSU are protocoale extinse de colaborare">
+            <input type="checkbox" value="strategic">
+            <span class="filter-icon">&#9733;</span>
+            <span class="filter-label">Parteneri strategici</span>
+            <span class="filter-count">${strategicCount}</span>
+        </label>
+        <label class="filter-checkbox" title="Parteneri implicati in gestionarea crizei din Ucraina">
+            <input type="checkbox" value="ukraine">
+            <span class="filter-icon filter-icon-ua">UA</span>
+            <span class="filter-label">Sprijin Ucraina</span>
+            <span class="filter-count">${ukraineCount}</span>
+        </label>
     `;
 
-    container.querySelectorAll('.special-pill').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const filter = btn.dataset.filter;
-            const isActive = btn.classList.contains('active');
-
-            container.querySelectorAll('.special-pill').forEach(b => b.classList.remove('active'));
-
-            if (isActive) {
-                filterState.specialFilter = null;
-            } else {
-                btn.classList.add('active');
-                filterState.specialFilter = filter;
-            }
-
+    container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const checked = [...container.querySelectorAll('input[type="checkbox"]:checked')].map(c => c.value);
+            // For special filters, we'll use an array now
+            filterState.specialFilters = checked;
+            filterState.specialFilter = checked.length > 0 ? checked[0] : null; // backward compat
+            updateSpecialCountLabel();
             deselectNode();
             rebuildGraph();
             syncMobileFilters();
         });
     });
+}
+
+function updateSpecialCountLabel() {
+    const label = document.getElementById('special-count-label');
+    if (!label) return;
+    const container = document.getElementById('special-filters');
+    if (!container) return;
+    const count = container.querySelectorAll('input[type="checkbox"]:checked').length;
+    label.textContent = count > 0 ? count : '';
 }
 
 function buildSearch(networkData) {

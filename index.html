@@ -32,7 +32,7 @@
         <div class="header-right">
             <div class="header-partner-logos">
                 <a href="https://www.uvt.ro/" target="_blank"><img src="logos/uvt.png" alt="UVT"></a>
-                <a href="https://fsgc.uvt.ro/" target="_blank"><img src="logos/fsgc.png" alt="FSGC"></a>
+                <a href="https://connectm.uvt.ro/" target="_blank"><img src="logos/S_Logo Fablab (All White) Horizontal.png" alt="Social Fabrics Research Lab"></a>
             </div>
             <button id="mobile-nav-toggle" class="mobile-nav-toggle" aria-label="Menu">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -59,9 +59,16 @@
 
             <div class="fb-separator"></div>
 
-            <!-- Entity type multi-select -->
-            <div class="fb-group" id="entity-filters">
-                <!-- JS-generated pills -->
+            <!-- Entity type dropdown -->
+            <div class="fb-dropdown-wrap">
+                <button class="fb-dropdown-btn" id="entity-dropdown-btn">
+                    Tip organizație
+                    <span class="fb-dropdown-count" id="entity-count-label"></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="fb-dropdown-panel hidden" id="entity-panel">
+                    <div id="entity-filters"></div>
+                </div>
             </div>
 
             <div class="fb-separator"></div>
@@ -84,9 +91,16 @@
 
             <div class="fb-separator"></div>
 
-            <!-- Special filters -->
-            <div class="fb-group" id="special-filters">
-                <!-- JS-generated -->
+            <!-- Special filters dropdown -->
+            <div class="fb-dropdown-wrap">
+                <button class="fb-dropdown-btn" id="special-dropdown-btn">
+                    Alte filtre
+                    <span class="fb-dropdown-count" id="special-count-label"></span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="fb-dropdown-panel hidden" id="special-panel">
+                    <div id="special-filters"></div>
+                </div>
             </div>
 
             <!-- Mobile filter toggle -->

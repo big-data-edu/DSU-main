@@ -107,56 +107,39 @@ export function initAbout() {
 
             <div>
                 <div class="about-team-card">
-                    <div class="card-title">Parteneri și realizatori</div>
+                    <div class="card-title">Parteneri instituționali</div>
                     <div class="card-text">
-                        <strong>Suport educațional:</strong><br>
-                        <a href="https://www.uvt.ro" target="_blank">Universitatea de Vest din Timișoara (UVT)</a><br>
-                        <a href="https://fsgc.uvt.ro" target="_blank">Facultatea de Științe ale Guvernării și Comunicării (FSGC)</a>
-                        <br><br>
-                        <strong>Proiect realizat de:</strong><br>
-                        <a href="https://fablabtm.ro" target="_blank">FabLab Timișoara</a> sub umbrela <a href="https://connectm.ro" target="_blank">ConnecTM</a>
-                        <br><br>
-                        <strong>Coordonator proiect:</strong><br>
-                        Lect. univ. dr. Silvia Fierăscu
-                        <br><br>
-                        <strong>Echipa:</strong><br>
-                        Bogdan Doboșeru<br>
-                        Laurențiu Florea<br>
-                        Andrei Galescu<br>
-                        Alexandru Poliac-Seres<br>
-                        Briana Toader
+                        <a href="https://www.dsu.mai.gov.ro" target="_blank">Departamentul pentru Situații de Urgență</a><br>
+                        <a href="https://www.uvt.ro" target="_blank">Universitatea de Vest din Timișoara</a>
+                        (<a href="https://fsgc.uvt.ro" target="_blank">Facultatea de Științe ale Guvernării și Comunicării</a>)
                     </div>
 
-                    <div class="about-logos">
-                        <a href="https://www.uvt.ro" target="_blank" title="Universitatea de Vest din Timișoara">
-                            <img src="logos/uvt.png" alt="UVT">
-                        </a>
-                        <a href="https://fsgc.uvt.ro" target="_blank" title="FSGC">
-                            <img src="logos/fsgc.png" alt="FSGC">
-                        </a>
+                    <div class="about-logos" style="margin-top: 12px; margin-bottom: 16px;">
                         <a href="https://www.dsu.mai.gov.ro" target="_blank" title="DSU">
                             <img src="logos/dsu.png" alt="DSU">
                         </a>
+                        <a href="https://www.uvt.ro" target="_blank" title="Universitatea de Vest din Timișoara">
+                            <img src="logos/uvt.png" alt="UVT">
+                        </a>
                     </div>
-                </div>
 
-                <div class="about-card">
-                    <div class="card-title">Mulțumiri</div>
-                    <div class="card-text">
-                        Cu deosebită recunoștință față de Departamentul pentru Situații de Urgență (DSU)
-                        pentru furnizarea datelor și suportul acordat pe parcursul proiectului.
-                        <br><br>
-                        În special, mulțumim domnului <strong>Mihai Lupu</strong>, Director de cabinet al
-                        Secretarului de Stat, Șef al Departamentului pentru Situații de Urgență, pentru
-                        sprijinul și deschiderea în realizarea acestei inițiative.
+                    <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: 14px;">
+                        <div style="font-weight: 600; color: var(--accent-light); margin-bottom: 8px;">Proiect realizat de:</div>
+                        <div class="card-text">
+                            <a href="https://connectm.uvt.ro" target="_blank">Social Fabrics Research Lab</a> (ConnecTM)
+                        </div>
                     </div>
-                </div>
 
-                <div class="about-card">
-                    <div class="card-title">Contact</div>
-                    <div class="card-text">
-                        Pentru întrebări sau sugestii:<br>
-                        <a href="mailto:alexandru.poliac03@e-uvt.ro">alexandru.poliac03@e-uvt.ro</a>
+                    <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: 14px;">
+                        <div style="font-weight: 600; color: var(--accent-light); margin-bottom: 8px;">Echipa:</div>
+                        <div class="card-text">
+                            <strong>Silvia Fierăscu</strong> (coordonator)<br>
+                            <strong>Bogdan Doboșeru</strong> (data & legal)<br>
+                            <strong>Laurențiu Florea</strong> (data & legal)<br>
+                            <strong>Andrei Galescu</strong> (data & legal)<br>
+                            <strong>Alexandru Poliac-Seres</strong> (webdev)<br>
+                            <strong>Briana Toader</strong> (grafică)
+                        </div>
                     </div>
                 </div>
 
