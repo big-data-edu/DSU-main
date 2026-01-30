@@ -1082,14 +1082,19 @@ function setupNavHelp() {
     `;
     page.appendChild(helpCard);
 
-    // Create ? button (shown after dismissal)
+    // Create ? button (shown after dismissal) - in filter bar, left of search
     const helpBtn = document.createElement('button');
     helpBtn.id = 'nav-help-btn';
     helpBtn.className = 'nav-help-btn';
     helpBtn.innerHTML = '?';
     helpBtn.title = 'Cum navigati reteaua';
     helpBtn.style.display = 'none';
-    page.appendChild(helpBtn);
+    const helpBtnContainer = document.getElementById('nav-help-btn-container');
+    if (helpBtnContainer) {
+        helpBtnContainer.appendChild(helpBtn);
+    } else {
+        page.appendChild(helpBtn);
+    }
 
     // Check if user dismissed before
     const dismissed = localStorage.getItem('dsu-nav-help-dismissed');

@@ -110,11 +110,8 @@ function navigateTo(page) {
         legend.style.display = page === 'network' ? '' : 'none';
     }
 
-    // Show/hide nav help
-    const navHelp = document.getElementById('nav-help-btn');
-    if (navHelp) {
-        navHelp.style.display = page === 'network' ? '' : 'none';
-    }
+    // Note: nav-help-btn is now in the filter bar, which is hidden on non-network pages
+    // Its visibility is controlled by the dismissal state in network.js
 
     // Lazy init statistics
     if (page === 'statistics' && !statsInitialized && window._statsData) {

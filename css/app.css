@@ -292,6 +292,10 @@ body {
     overflow: visible;
 }
 
+/* Help button container */
+#nav-help-btn-container {
+    display: contents;
+}
 
 .fb-separator {
     width: 1px;
@@ -1130,18 +1134,15 @@ body {
 }
 
 .nav-help-btn {
-    position: absolute;
-    bottom: 20px;
-    left: 20px;
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     background: rgba(10, 14, 26, 0.88);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--border-subtle);
     border-radius: 50%;
     color: var(--text-secondary);
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 700;
     cursor: pointer;
     z-index: 100;
@@ -1149,6 +1150,8 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+    margin-right: 10px;
 }
 
 .nav-help-btn:hover {
@@ -1795,8 +1798,10 @@ body {
     }
 
     .nav-help-btn {
-        bottom: 12px;
-        left: 12px;
+        width: 26px;
+        height: 26px;
+        font-size: 0.8rem;
+        margin-right: 8px;
     }
 
     .page-padded {
