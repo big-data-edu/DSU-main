@@ -15,6 +15,10 @@ let currentLinks = [];
 let allNetworkData = null;
 let selectedNodeId = null;
 let hoveredNodeId = null;
+let currentLinkSel = null;
+let currentNodeSel = null;
+let currentLabelSel = null;
+let fonssExpanded = false;
 
 // Filter state
 let filterState = {
@@ -186,6 +190,27 @@ function rebuildGraph() {
             target: e.target
         }));
 
+    // FONSS expansion: add member nodes and links when expanded
+    if (fonssExpanded && fonssId && nodeMap.has(fonssId)) {
+        for (const [id, node] of Object.entries(nodes)) {
+            if (node.isFonssMember && node.parentId === fonssId) {
+                const d3Node = {
+                    id: id,
+                    label: node.label.length > 28 ? node.label.substring(0, 25) + '...' : node.label,
+                    fullLabel: node.label,
+                    type: 'Partner',
+                    entityType: node.entityType,
+                    color: node.color,
+                    radius: 7,
+                    data: node
+                };
+                d3Nodes.push(d3Node);
+                nodeMap.set(id, d3Node);
+                d3Links.push({ source: id, target: fonssId });
+            }
+        }
+    }
+
     currentNodes = d3Nodes;
     currentLinks = d3Links;
 
@@ -216,6 +241,7 @@ function renderGraph(nodes, links) {
         .join('line')
         .attr('stroke', 'rgba(220, 38, 38, 0.15)')
         .attr('stroke-width', 1.5);
+    currentLinkSel = linkSel;
 
     // Create nodes
     const nodeSel = nodeGroup.selectAll('g')
@@ -223,6 +249,7 @@ function renderGraph(nodes, links) {
         .join('g')
         .attr('class', 'node-group')
         .style('cursor', 'pointer');
+    currentNodeSel = nodeSel;
 
     // Domain nodes (diamond shape)
     nodeSel.filter(d => d.type === 'Domain')
@@ -257,6 +284,7 @@ function renderGraph(nodes, links) {
         .attr('font-weight', d => d.type === 'Domain' ? '700' : '400')
         .attr('font-family', 'Nunito, Inter, sans-serif')
         .attr('pointer-events', 'none');
+    currentLabelSel = labelSel;
 
     // Interaction
     const tooltip = document.getElementById('tooltip');
@@ -276,7 +304,16 @@ function renderGraph(nodes, links) {
     .on('mouseleave', function() {
         if (isMobileDevice()) return;
         hoveredNodeId = null;
-        resetHighlight(linkSel, nodeSel, labelSel);
+        if (selectedNodeId) {
+            const selNode = currentNodes.find(n => n.id === selectedNodeId);
+            if (selNode) {
+                highlightConnections(selNode, linkSel, nodeSel, labelSel);
+            } else {
+                resetHighlight(linkSel, nodeSel, labelSel);
+            }
+        } else {
+            resetHighlight(linkSel, nodeSel, labelSel);
+        }
         hideTooltip(tooltip);
     })
     .on('click', function(event, d) {
@@ -432,13 +469,81 @@ function hideTooltip(el) {
 // ---- NODE SELECTION ----
 
 function selectNode(d) {
+    // Collapse FONSS if selecting an unrelated node
+    if (fonssExpanded && !d.data?.isFonssMember && d.data?.label !== FONSS_PARENT_NAME) {
+        collapseFonss();
+        d = currentNodes.find(n => n.id === d.id) || d;
+    }
+
     selectedNodeId = d.id;
     showDetailCard(d);
+
+    // Highlight selected node and its connections
+    if (currentLinkSel && currentNodeSel && currentLabelSel) {
+        highlightConnections(d, currentLinkSel, currentNodeSel, currentLabelSel);
+    }
+
+    // Expand FONSS members when FONSS is selected
+    if (!fonssExpanded && d.data?.label === FONSS_PARENT_NAME) {
+        expandFonss(d.id);
+        const fonssNode = currentNodes.find(n => n.id === d.id);
+        if (fonssNode && currentLinkSel && currentNodeSel && currentLabelSel) {
+            highlightConnections(fonssNode, currentLinkSel, currentNodeSel, currentLabelSel);
+        }
+    }
 }
 
 function deselectNode() {
     selectedNodeId = null;
     document.getElementById('partner-detail').classList.add('hidden');
+
+    // Reset highlight
+    if (currentLinkSel && currentNodeSel && currentLabelSel) {
+        resetHighlight(currentLinkSel, currentNodeSel, currentLabelSel);
+    }
+
+    // Collapse FONSS members
+    if (fonssExpanded) {
+        collapseFonss();
+    }
+}
+
+// ---- FONSS EXPANSION ----
+
+function savePositions() {
+    const positions = {};
+    currentNodes.forEach(n => {
+        if (n.x !== undefined) positions[n.id] = { x: n.x, y: n.y };
+    });
+    return positions;
+}
+
+function restorePositions(positions, fonssAnchorId) {
+    currentNodes.forEach(n => {
+        if (positions[n.id]) {
+            n.x = positions[n.id].x;
+            n.y = positions[n.id].y;
+        } else if (fonssAnchorId && n.data?.isFonssMember && positions[fonssAnchorId]) {
+            n.x = positions[fonssAnchorId].x + (Math.random() - 0.5) * 60;
+            n.y = positions[fonssAnchorId].y + (Math.random() - 0.5) * 60;
+        }
+    });
+}
+
+function expandFonss(fonssNodeId) {
+    fonssExpanded = true;
+    const positions = savePositions();
+    rebuildGraph();
+    restorePositions(positions, fonssNodeId);
+    if (simulation) simulation.alpha(0.5).restart();
+}
+
+function collapseFonss() {
+    fonssExpanded = false;
+    const positions = savePositions();
+    rebuildGraph();
+    restorePositions(positions);
+    if (simulation) simulation.alpha(0.3).restart();
 }
 
 function showDetailCard(d) {
