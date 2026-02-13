@@ -1876,6 +1876,181 @@ body {
     }
 }
 
+/* =========================================
+   LIGHT THEME
+   ========================================= */
+[data-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-secondary: #f1f5f9;
+    --bg-card: rgba(0, 0, 0, 0.03);
+    --bg-card-hover: rgba(0, 0, 0, 0.06);
+    --border-subtle: rgba(0, 0, 0, 0.1);
+    --border-accent: rgba(220, 38, 38, 0.25);
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --text-dim: #94a3b8;
+    --accent-glow: rgba(220, 38, 38, 0.12);
+}
+
+[data-theme="light"] #filter-bar,
+[data-theme="light"] .fb-dropdown-panel,
+[data-theme="light"] .search-results,
+[data-theme="light"] .mobile-filter-panel,
+[data-theme="light"] .mobile-nav-dropdown {
+    background: rgba(248, 250, 252, 0.98);
+}
+
+[data-theme="light"] #partner-detail,
+[data-theme="light"] .nav-help-card,
+[data-theme="light"] #tooltip,
+[data-theme="light"] .legend-panel,
+[data-theme="light"] .legend-toggle-btn,
+[data-theme="light"] #stats-overlay,
+[data-theme="light"] .nav-help-btn,
+[data-theme="light"] .graph-toolbar-btn {
+    background: rgba(248, 250, 252, 0.96);
+}
+
+[data-theme="light"] .nav-link {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .fb-dropdown-btn,
+[data-theme="light"] .entity-pill,
+[data-theme="light"] .special-pill,
+[data-theme="light"] #search-input,
+[data-theme="light"] .mfp-btn,
+[data-theme="light"] .fb-panel-btn {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="light"] .metric-card {
+    background: linear-gradient(135deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.01) 100%);
+}
+
+[data-theme="light"] .about-card,
+[data-theme="light"] .chart-container {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .about-team-card {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.06) 0%, rgba(153, 27, 27, 0.03) 100%);
+}
+
+[data-theme="light"] .stat-card {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.06) 0%, rgba(153, 27, 27, 0.04) 100%);
+}
+
+[data-theme="light"] .tag-domain {
+    background: rgba(220, 38, 38, 0.08);
+    color: var(--accent-dark);
+}
+
+[data-theme="light"] .data-notice {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+[data-theme="light"] .filter-count,
+[data-theme="light"] .entity-pill-count,
+[data-theme="light"] .special-pill-count {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+/* SVG theming for light mode */
+[data-theme="light"] .labels text {
+    fill: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .nodes circle {
+    stroke: rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .nodes rect {
+    stroke: rgba(0, 0, 0, 0.2) !important;
+}
+
+/* =========================================
+   THEME TOGGLE
+   ========================================= */
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-subtle);
+    border-radius: 50%;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--motion-fast) ease;
+    flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+    background: rgba(220, 38, 38, 0.1);
+    border-color: var(--border-accent);
+    color: var(--text-primary);
+}
+
+/* =========================================
+   GRAPH TOOLBAR (reset zoom, export)
+   ========================================= */
+.graph-toolbar {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 6px;
+    z-index: 100;
+}
+
+.graph-toolbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: rgba(10, 14, 26, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--motion-fast) ease;
+}
+
+.graph-toolbar-btn:hover {
+    border-color: var(--border-accent);
+    color: var(--text-primary);
+}
+
+/* =========================================
+   PAGE TRANSITIONS
+   ========================================= */
+.page-exit {
+    animation: pageOut 200ms ease both;
+}
+
+@keyframes pageOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(-8px); }
+}
+
+/* =========================================
+   MOBILE SWIPE INDICATOR
+   ========================================= */
+.swipe-indicator {
+    width: 36px;
+    height: 4px;
+    background: var(--text-dim);
+    border-radius: 2px;
+    margin: -4px auto 12px;
+    opacity: 0.5;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
