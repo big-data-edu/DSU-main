@@ -171,18 +171,24 @@ export function initKnowledgeGraph() {
   renderGraph();
 }
 
+// ─── Get container dimensions ───────────────────────────────────────────────
+function getKgDims() {
+  const container = document.getElementById("kg-container");
+  if (!container) return { w: 1200, h: 700 };
+  const rect = container.getBoundingClientRect();
+  return { w: rect.width || 1200, h: rect.height || 700 };
+}
+
 // ─── SVG Setup ──────────────────────────────────────────────────────────────
 function setupKgSVG() {
   const container = document.getElementById("kg-container");
   if (!container) return;
 
-  const rect = container.getBoundingClientRect();
-  const w = rect.width || 1200;
-  const h = rect.height || 700;
+  const { w, h } = getKgDims();
 
   kgSvg = d3.select("#kg-svg")
-    .attr("width", w)
-    .attr("height", h);
+    .attr("viewBox", `0 0 ${w} ${h}`)
+    .attr("preserveAspectRatio", "xMidYMid meet");
 
   // Clear any existing content
   kgSvg.selectAll("*").remove();
@@ -246,7 +252,6 @@ function setupKgSVG() {
     .scaleExtent([0.3, 2.5])
     .on("zoom", (event) => {
       kgGroup.attr("transform", event.transform);
-      // Update zoom display
       const pct = document.getElementById("kg-zoom-pct");
       if (pct) pct.textContent = Math.round(event.transform.k * 100) + "%";
     });
@@ -267,8 +272,8 @@ function setupKgSVG() {
   // Handle resize
   window.addEventListener("resize", () => {
     if (!document.getElementById("page-knowledgegraph")?.classList.contains("active")) return;
-    const r = container.getBoundingClientRect();
-    kgSvg.attr("width", r.width).attr("height", r.height);
+    const { w: nw, h: nh } = getKgDims();
+    kgSvg.attr("viewBox", `0 0 ${nw} ${nh}`);
   });
 }
 
@@ -279,10 +284,7 @@ function renderGraph() {
   // Clear previous render
   kgGroup.selectAll(".kg-edges, .kg-nodes").remove();
 
-  const container = document.getElementById("kg-container");
-  const rect = container.getBoundingClientRect();
-  const w = rect.width || 1200;
-  const h = rect.height || 700;
+  const { w, h } = getKgDims();
 
   // Filter visible
   const visibleNodeIds = new Set(

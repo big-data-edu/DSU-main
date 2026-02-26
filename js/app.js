@@ -167,10 +167,11 @@ function finishNavigation(page, nextEl) {
 
     // Lazy init knowledge graph
     if (page === 'knowledgegraph' && !kgInitialized) {
+        // Wait for page transition + layout to settle before measuring container
         setTimeout(() => {
             initKnowledgeGraph();
             kgInitialized = true;
-        }, 100);
+        }, 400);
     }
 }
 

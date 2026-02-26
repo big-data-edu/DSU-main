@@ -2057,12 +2057,19 @@ body {
 
 #page-knowledgegraph {
     height: 100%;
+    overflow: hidden;
+}
+
+#page-knowledgegraph.active {
+    display: flex;
+    flex-direction: column;
 }
 
 .kg-layout {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     background: #060b14;
     font-family: 'Inter', 'Nunito', sans-serif;
     color: #e2e8f0;
@@ -2146,6 +2153,7 @@ body {
 .kg-body {
     display: flex;
     flex: 1;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -2240,7 +2248,7 @@ body {
     background: #0c1322;
     border-radius: 6px;
     padding: 8px;
-    border: 1px solid color-mix(in srgb, var(--stat-color) 13%, transparent);
+    border: 1px solid #1e293b;
 }
 
 .kg-stat-val {
