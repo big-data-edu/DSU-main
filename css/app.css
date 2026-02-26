@@ -2423,6 +2423,59 @@ body {
     }
 }
 
+/* Knowledge graph tooltip */
+.kg-tooltip {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    pointer-events: none;
+    background: #0c1322ee;
+    border: 1px solid #1e3a5f;
+    border-radius: 8px;
+    padding: 10px 14px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    max-width: 280px;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Knowledge graph explanation banner */
+.kg-explainer {
+    background: linear-gradient(135deg, #0f1e3c 0%, #0c1322 100%);
+    border: 1px solid #1e3a5f33;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 0 14px 8px;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #64748b;
+}
+
+.kg-explainer-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #94a3b8;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+
+.kg-explainer-dismiss {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 9px;
+    color: #334155;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+    padding: 0;
+}
+
+.kg-explainer-dismiss:hover {
+    color: #64748b;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
