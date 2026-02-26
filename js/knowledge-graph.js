@@ -116,6 +116,15 @@ const RISK_ICONS = {
   "Temperaturi extreme": "\u{1F321}\uFE0F",
 };
 
+// ─── Spatial zone targets for each node type ────────────────────────────────
+// Expressed as fractions of canvas width/height so they adapt to viewport size
+const TYPE_ZONES = {
+  AUTHORITY:  { fx: 0.18, fy: 0.50 },  // left
+  CAPABILITY: { fx: 0.50, fy: 0.45 },  // center
+  RISK:       { fx: 0.82, fy: 0.50 },  // right
+  PHASE:      { fx: 0.50, fy: 0.92 },  // bottom center
+};
+
 // ─── Build graph from raw data ──────────────────────────────────────────────
 function buildGraph() {
   const nodesMap = new Map();
@@ -124,7 +133,7 @@ function buildGraph() {
 
   const addNode = (id, type, label) => {
     if (!nodesMap.has(id)) {
-      nodesMap.set(id, { id, type, label });
+      nodesMap.set(id, { id, type, label, degree: 0 });
     }
   };
 
@@ -148,7 +157,16 @@ function buildGraph() {
     addEdge(`cap:${cap}`, `phase:${phase}`, "IN_FAZA");
   });
 
-  return { nodes: [...nodesMap.values()], edges };
+  // Compute degree for each node (for sizing)
+  const nodes = [...nodesMap.values()];
+  edges.forEach(e => {
+    const src = nodesMap.get(e.source);
+    const tgt = nodesMap.get(e.target);
+    if (src) src.degree++;
+    if (tgt) tgt.degree++;
+  });
+
+  return { nodes, edges };
 }
 
 // ─── State ──────────────────────────────────────────────────────────────────
@@ -156,8 +174,8 @@ let kgSvg, kgGroup, kgSimulation;
 let kgGraph = null;
 let kgSelectedNode = null;
 let kgHoveredNode = null;
-let kgHiddenEdgeTypes = new Set();
-let kgHiddenNodeTypes = new Set();
+let kgHiddenEdgeTypes = new Set(["IN_FAZA"]);
+let kgHiddenNodeTypes = new Set(["PHASE"]);
 let kgInitialized = false;
 
 // ─── Public API ─────────────────────────────────────────────────────────────
@@ -277,12 +295,19 @@ function setupKgSVG() {
   });
 }
 
+// ─── Compute visual node size based on degree ───────────────────────────────
+function nodeRadius(d) {
+  const base = NODE_TYPES[d.type]?.size || 20;
+  const degreeBoost = Math.min(d.degree || 0, 30) * 0.35;
+  return base + degreeBoost;
+}
+
 // ─── Render graph ───────────────────────────────────────────────────────────
 function renderGraph() {
   if (!kgGraph || !kgGroup) return;
 
   // Clear previous render
-  kgGroup.selectAll(".kg-edges, .kg-nodes").remove();
+  kgGroup.selectAll(".kg-edges, .kg-nodes, .kg-zone-labels").remove();
 
   const { w, h } = getKgDims();
 
@@ -303,18 +328,58 @@ function renderGraph() {
 
   const visibleNodes = kgGraph.nodes.filter(n => visibleNodeIds.has(n.id));
 
-  // Build D3 force simulation
+  // Build D3 force simulation with spatial clustering
   if (kgSimulation) kgSimulation.stop();
 
+  // Custom clustering force: gently pull nodes toward their type's zone
+  function clusterForce(alpha) {
+    visibleNodes.forEach(d => {
+      const zone = TYPE_ZONES[d.type];
+      if (!zone) return;
+      const tx = zone.fx * w;
+      const ty = zone.fy * h;
+      const strength = 0.12 * alpha;
+      d.vx += (tx - d.x) * strength;
+      d.vy += (ty - d.y) * strength;
+    });
+  }
+
   kgSimulation = d3.forceSimulation(visibleNodes)
-    .force("charge", d3.forceManyBody().strength(-450))
+    .force("charge", d3.forceManyBody().strength(-350))
     .force("link", d3.forceLink(visibleEdges)
       .id(d => d.id)
-      .distance(170)
-      .strength(0.4))
-    .force("center", d3.forceCenter(w / 2, h / 2).strength(0.05))
-    .force("collide", d3.forceCollide().radius(d => (NODE_TYPES[d.type]?.size || 20) + 15))
-    .alphaDecay(0.025);
+      .distance(d => {
+        // Shorter links within same type-zone, longer across zones
+        const srcType = (typeof d.source === "object" ? d.source : visibleNodes.find(n => n.id === d.source))?.type;
+        const tgtType = (typeof d.target === "object" ? d.target : visibleNodes.find(n => n.id === d.target))?.type;
+        return srcType === tgtType ? 100 : 200;
+      })
+      .strength(0.3))
+    .force("collide", d3.forceCollide().radius(d => nodeRadius(d) + 18))
+    .force("cluster", clusterForce)
+    .alphaDecay(0.02)
+    .velocityDecay(0.35);
+
+  // Zone labels (subtle background labels showing where each type group lives)
+  const zoneLabels = kgGroup.append("g").attr("class", "kg-zone-labels");
+  const visibleTypes = new Set(visibleNodes.map(n => n.type));
+  Object.entries(TYPE_ZONES).forEach(([type, zone]) => {
+    if (!visibleTypes.has(type)) return;
+    const cfg = NODE_TYPES[type];
+    zoneLabels.append("text")
+      .attr("x", zone.fx * w)
+      .attr("y", zone.fy * h - (type === "PHASE" ? 30 : 0))
+      .attr("text-anchor", "middle")
+      .attr("font-size", "13px")
+      .attr("fill", cfg.color)
+      .attr("opacity", 0.12)
+      .attr("font-weight", "800")
+      .attr("letter-spacing", "4px")
+      .style("text-transform", "uppercase")
+      .style("font-family", "'Inter', sans-serif")
+      .style("pointer-events", "none")
+      .text(cfg.label);
+  });
 
   // Edge group
   const edgeGroup = kgGroup.append("g").attr("class", "kg-edges");
@@ -327,7 +392,7 @@ function renderGraph() {
       .attr("stroke-width", d => EDGE_TYPES[d.type].width)
       .attr("stroke-dasharray", d => EDGE_TYPES[d.type].dash)
       .attr("marker-end", d => `url(#kg-arrow-${d.type})`)
-      .attr("opacity", 0.45);
+      .attr("opacity", 0.35);
 
   // Node group
   const nodeGroupSel = kgGroup.append("g").attr("class", "kg-nodes");
@@ -358,17 +423,22 @@ function renderGraph() {
       .on("mouseenter", (event, d) => {
         kgHoveredNode = d.id;
         updateNodeAppearance(nodeGroups, edgePaths);
+        showKgTooltip(event, d);
+      })
+      .on("mousemove", (event, d) => {
+        moveKgTooltip(event);
       })
       .on("mouseleave", () => {
         kgHoveredNode = null;
         updateNodeAppearance(nodeGroups, edgePaths);
+        hideKgTooltip();
       });
 
-  // Draw shapes for each node
+  // Draw shapes for each node (degree-scaled)
   nodeGroups.each(function(d) {
     const g = d3.select(this);
     const cfg = NODE_TYPES[d.type];
-    const s = cfg.size;
+    const s = nodeRadius(d);
 
     if (d.type === "CAPABILITY") {
       // Hexagon
@@ -412,18 +482,20 @@ function renderGraph() {
         .attr("class", "kg-shape");
     }
 
-    // Label
-    const shortLabel = d.label.length > 22 ? d.label.slice(0, 22) + "\u2026" : d.label;
+    // Label — bigger, full text for shorter names, wrap for longer ones
+    const maxLen = d.type === "CAPABILITY" ? 28 : 24;
+    const shortLabel = d.label.length > maxLen ? d.label.slice(0, maxLen) + "\u2026" : d.label;
+    const fontSize = d.type === "CAPABILITY" ? "11px" : "10px";
     g.append("text")
-      .attr("y", s + 14)
+      .attr("y", s + 16)
       .attr("text-anchor", "middle")
-      .attr("font-size", "9px")
-      .attr("fill", "#94a3b8")
+      .attr("font-size", fontSize)
+      .attr("fill", cfg.color + "cc")
       .attr("pointer-events", "none")
       .attr("class", "kg-label")
       .style("user-select", "none")
       .style("font-family", "'Inter', 'Nunito', sans-serif")
-      .style("font-weight", "500")
+      .style("font-weight", "600")
       .style("letter-spacing", "0.3px")
       .text(shortLabel);
   });
@@ -435,8 +507,8 @@ function renderGraph() {
       const tx = d.target.x, ty = d.target.y;
       const dx = tx - sx, dy = ty - sy;
       const len = Math.sqrt(dx * dx + dy * dy) || 1;
-      const srcSize = NODE_TYPES[d.source.type]?.size || 20;
-      const tgtSize = NODE_TYPES[d.target.type]?.size || 20;
+      const srcSize = nodeRadius(d.source);
+      const tgtSize = nodeRadius(d.target);
       const x1 = sx + (dx / len) * (srcSize + 4);
       const y1 = sy + (dy / len) * (srcSize + 4);
       const x2 = tx - (dx / len) * (tgtSize + 12);
@@ -456,6 +528,45 @@ function renderGraph() {
 
   // Update stats
   updateKgStats(visibleNodes.length, visibleEdges.length);
+}
+
+// ─── Tooltip ─────────────────────────────────────────────────────────────────
+function ensureTooltip() {
+  let tip = document.getElementById("kg-tooltip");
+  if (!tip) {
+    tip = document.createElement("div");
+    tip.id = "kg-tooltip";
+    tip.className = "kg-tooltip";
+    document.body.appendChild(tip);
+  }
+  return tip;
+}
+
+function showKgTooltip(event, d) {
+  const tip = ensureTooltip();
+  const cfg = NODE_TYPES[d.type];
+  const connections = kgGraph.edges.filter(e => {
+    const srcId = typeof e.source === "object" ? e.source.id : e.source;
+    const tgtId = typeof e.target === "object" ? e.target.id : e.target;
+    return srcId === d.id || tgtId === d.id;
+  }).length;
+  tip.innerHTML = `
+    <div style="color:${cfg.color}; font-size:10px; text-transform:uppercase; letter-spacing:1px; margin-bottom:3px;">${cfg.label}</div>
+    <div style="font-size:13px; font-weight:700; color:#f1f5f9; margin-bottom:4px;">${d.label}</div>
+    <div style="font-size:10px; color:#64748b;">${connections} conexiuni</div>`;
+  tip.style.display = "block";
+  moveKgTooltip(event);
+}
+
+function moveKgTooltip(event) {
+  const tip = ensureTooltip();
+  tip.style.left = (event.pageX + 14) + "px";
+  tip.style.top = (event.pageY - 14) + "px";
+}
+
+function hideKgTooltip() {
+  const tip = document.getElementById("kg-tooltip");
+  if (tip) tip.style.display = "none";
 }
 
 // ─── Node selection ─────────────────────────────────────────────────────────
@@ -493,8 +604,8 @@ function updateNodeAppearance(nodeGroups, edgePaths) {
   // Update edges
   edgePaths
     .attr("opacity", d => {
-      if (!connectedEdgeIds) return 0.45;
-      return connectedEdgeIds.has(d.id) ? 1 : 0.08;
+      if (!connectedEdgeIds) return 0.35;
+      return connectedEdgeIds.has(d.id) ? 0.9 : 0.06;
     })
     .attr("stroke-width", d => {
       const base = EDGE_TYPES[d.type].width;
@@ -608,9 +719,10 @@ function setupKgControls() {
       const btn = document.createElement("button");
       btn.className = "kg-toggle-btn";
       btn.dataset.type = type;
-      btn.style.borderColor = cfg.color + "88";
-      btn.style.background = cfg.color + "18";
-      btn.style.color = cfg.color;
+      const hidden = kgHiddenNodeTypes.has(type);
+      btn.style.borderColor = hidden ? "#1e293b" : cfg.color + "88";
+      btn.style.background = hidden ? "#0c1322" : cfg.color + "18";
+      btn.style.color = hidden ? "#334155" : cfg.color;
       btn.textContent = cfg.label;
       btn.addEventListener("click", () => {
         if (kgHiddenNodeTypes.has(type)) {
@@ -648,17 +760,20 @@ function setupKgControls() {
   if (edgeToggles) {
     edgeToggles.innerHTML = "";
     Object.entries(EDGE_TYPES).forEach(([type, cfg]) => {
+      const hidden = kgHiddenEdgeTypes.has(type);
       const row = document.createElement("div");
       row.className = "kg-edge-toggle";
-      row.style.background = cfg.color + "12";
-      row.style.borderColor = cfg.color + "33";
+      row.style.background = hidden ? "transparent" : cfg.color + "12";
+      row.style.borderColor = hidden ? "#0f1e3c" : cfg.color + "33";
+      const lineColor = hidden ? "#1e293b" : cfg.color;
+      const spanColor = hidden ? "#334155" : cfg.color;
       row.innerHTML = `
         <svg width="28" height="8">
-          <line x1="0" y1="4" x2="22" y2="4" stroke="${cfg.color}"
+          <line x1="0" y1="4" x2="22" y2="4" stroke="${lineColor}"
             stroke-width="${cfg.width}" stroke-dasharray="${cfg.dash}" />
-          <polygon points="22,1 28,4 22,7" fill="${cfg.color}" />
+          <polygon points="22,1 28,4 22,7" fill="${lineColor}" />
         </svg>
-        <span style="color:${cfg.color}">${cfg.label}</span>`;
+        <span style="color:${spanColor}">${cfg.label}</span>`;
       row.addEventListener("click", () => {
         if (kgHiddenEdgeTypes.has(type)) {
           kgHiddenEdgeTypes.delete(type);
