@@ -99,7 +99,7 @@ const EDGE_TYPES = {
   SPRIJINA: { label: "SPRIJINIT DE (Suport)", color: "#8b5cf6", dash: "6,3", width: 1.5 },
   SECUNDAR: { label: "SECUNDAR",            color: "#3b82f6", dash: "3,3", width: 1.5 },
   ACOPERA:  { label: "ACOPERĂ RISCUL",      color: "#f87171", dash: "",    width: 1.2 },
-  IN_FAZA:  { label: "ÎN FAZA",             color: "#34d399", dash: "2,4", width: 1   },
+  IN_FAZA:  { label: "ÎN FAZĂ",             color: "#34d399", dash: "2,4", width: 1   },
 };
 
 const RISK_ICONS = {
@@ -320,10 +320,9 @@ function renderGraph() {
 
   const visibleEdges = kgGraph.edges.filter(e => {
     if (kgHiddenEdgeTypes.has(e.type)) return false;
-    const srcNode = kgGraph.nodes.find(n => n.id === e.source);
-    const tgtNode = kgGraph.nodes.find(n => n.id === e.target);
-    if (!srcNode || !tgtNode) return false;
-    return visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target);
+    const srcId = typeof e.source === "object" ? e.source.id : e.source;
+    const tgtId = typeof e.target === "object" ? e.target.id : e.target;
+    return visibleNodeIds.has(srcId) && visibleNodeIds.has(tgtId);
   });
 
   const visibleNodes = kgGraph.nodes.filter(n => visibleNodeIds.has(n.id));
