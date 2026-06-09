@@ -320,7 +320,8 @@ body.no-filter-bar #app-container {
     pointer-events: none;
 }
 
-#search-input {
+#search-input,
+#net2-search {
     width: 100%;
     padding: 7px 10px 7px 32px;
     background: rgba(255, 255, 255, 0.06);
@@ -331,13 +332,16 @@ body.no-filter-bar #app-container {
     font-size: 0.82rem;
     outline: none;
     transition: border-color var(--motion-fast) ease;
+    box-sizing: border-box;
 }
 
-#search-input:focus {
+#search-input:focus,
+#net2-search:focus {
     border-color: rgba(220, 38, 38, 0.5);
 }
 
-#search-input::placeholder {
+#search-input::placeholder,
+#net2-search::placeholder {
     color: var(--text-dim);
 }
 
@@ -373,12 +377,12 @@ body.no-filter-bar #app-container {
     border-bottom: none;
 }
 
-/* Entity filter pills (horizontal in filter bar) */
+/* Entity filter list (vertical, inside the dropdown panel) */
 #entity-filters {
     display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
 }
 
 .entity-pill {
@@ -589,12 +593,12 @@ body.no-filter-bar #app-container {
     color: var(--text-secondary);
 }
 
-/* Special filter pills */
+/* Special filter list (vertical, inside the dropdown panel) */
 #special-filters {
     display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
 }
 
 .special-pill {
@@ -951,8 +955,7 @@ body.no-filter-bar #app-container {
 #floating-legend {
     position: absolute;
     bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 16px;
     z-index: 100;
 }
 
@@ -982,8 +985,7 @@ body.no-filter-bar #app-container {
 .legend-panel {
     position: absolute;
     bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
     background: rgba(10, 14, 26, 0.96);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -1168,11 +1170,15 @@ body.no-filter-bar #app-container {
    ========================================= */
 #partner-detail {
     position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 540px;
+    top: 56px;
+    right: 16px;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    width: 360px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100% - 56px - 184px);
+    overflow-y: auto;
     background: rgba(10, 14, 26, 0.96);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -1181,12 +1187,19 @@ body.no-filter-bar #app-container {
     padding: 20px;
     z-index: 200;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(220, 38, 38, 0.1);
-    animation: slideUp var(--motion-base) var(--ease) both;
+    animation: slideInRight var(--motion-base) var(--ease) both;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes slideUp {
-    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .close-detail-btn {
@@ -1774,8 +1787,10 @@ body.no-filter-bar #app-container {
         font-size: 0.5rem;
     }
 
-    /* Partner detail card on mobile */
-    #partner-detail {
+    /* Partner detail cards on mobile — bottom sheet */
+    #partner-detail,
+    #partner-detail2 {
+        top: auto;
         bottom: 0;
         left: 0;
         right: 0;
@@ -1785,6 +1800,7 @@ body.no-filter-bar #app-container {
         border-radius: var(--radius-lg) var(--radius-lg) 0 0;
         max-height: 50vh;
         overflow-y: auto;
+        animation: slideUp var(--motion-base) var(--ease) both;
     }
 
     @keyframes slideUp {
@@ -1987,8 +2003,7 @@ body.no-filter-bar #app-container {
 #floating-legend2 {
     position: absolute;
     bottom: 16px;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 16px;
     z-index: 100;
 }
 
@@ -2004,11 +2019,13 @@ body.no-filter-bar #app-container {
 /* Detail card (mirror of #partner-detail) */
 #partner-detail2 {
     position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 90%;
-    max-width: 540px;
+    top: 56px;
+    right: 16px;
+    bottom: auto;
+    left: auto;
+    transform: none;
+    width: 360px;
+    max-width: calc(100vw - 32px);
     background: rgba(10, 14, 26, 0.96);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -2017,9 +2034,11 @@ body.no-filter-bar #app-container {
     padding: 20px;
     z-index: 200;
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(220, 38, 38, 0.1);
-    animation: slideUp var(--motion-base) var(--ease) both;
-    max-height: 60%;
+    animation: slideInRight var(--motion-base) var(--ease) both;
+    max-height: calc(100% - 56px - 184px);
     overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
 }
 #partner-detail2.hidden { display: none; }
 

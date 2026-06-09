@@ -499,7 +499,11 @@ function zoomToFocus(d) {
     // Scale to fit, capped so we don't zoom in too far
     const scale = Math.min(width / dx, height / dy, 2.5);
     if (!isFinite(scale) || scale <= 0 || !width || !height) return;
-    const tx = width / 2 - cx * scale;
+    // When the detail panel is docked on the right (desktop), bias the focus
+    // point left so the cluster lands in the visible area, not behind the panel.
+    const detailOpen = !document.getElementById('partner-detail')?.classList.contains('hidden');
+    const offsetX = (detailOpen && window.innerWidth >= 768) ? 196 : 0;
+    const tx = width / 2 - offsetX - cx * scale;
     const ty = height / 2 - cy * scale;
 
     svg.transition()

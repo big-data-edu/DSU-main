@@ -364,7 +364,9 @@ function zoomToFocus(d) {
     const ids = connectedIdSet(d);
     const ns = currentNodes.filter(n => ids.has(n.id) && n.x !== undefined);
     if (ns.length === 0) return;
-    fitTo(ns, 100, 2.5);
+    // Bias left so the cluster isn't hidden behind the right-docked detail panel.
+    const offsetX = window.innerWidth >= 768 ? 196 : 0;
+    fitTo(ns, 100, 2.5, offsetX);
 }
 
 function zoomReset() {
@@ -373,7 +375,7 @@ function zoomReset() {
     fitTo(positioned, 50, 1.3);
 }
 
-function fitTo(ns, padding, maxScale) {
+function fitTo(ns, padding, maxScale, offsetX = 0) {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     ns.forEach(n => {
         minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
@@ -384,7 +386,7 @@ function fitTo(ns, padding, maxScale) {
     const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
     const scale = Math.min(width / dx, height / dy, maxScale);
     if (!isFinite(scale) || scale <= 0 || !width || !height) return;
-    const tx = width / 2 - cx * scale, ty = height / 2 - cy * scale;
+    const tx = width / 2 - offsetX - cx * scale, ty = height / 2 - cy * scale;
     svg.transition().duration(700).ease(d3.easeCubicInOut)
         .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
 }
