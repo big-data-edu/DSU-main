@@ -5,13 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ecosistemul Partenerilor DSU</title>
     <meta name="description" content="Vizualizare interactivă a rețelei de parteneriate DSU – Departamentul pentru Situații de Urgență din România">
+    <meta name="theme-color" content="#0a0e1a">
+    <meta property="og:title" content="Ecosistemul Partenerilor DSU">
+    <meta property="og:description" content="Hartă interactivă a rețelei de parteneriate și statistici ale Departamentului pentru Situații de Urgență din România">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="logos/dsu.png">
     <link rel="icon" type="image/png" href="logos/dsu.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
-    <link rel="stylesheet" href="css/app.css?v=4">
+    <link rel="stylesheet" href="css/app.css?v=5">
 </head>
 <body>
     <!-- ====== NAVBAR ====== -->
@@ -36,7 +41,7 @@
             </button>
             <div class="header-partner-logos">
                 <a href="https://www.uvt.ro/" target="_blank"><img src="logos/uvt.png" alt="UVT"></a>
-                <a href="https://connectm.uvt.ro/" target="_blank"><img src="logos/S_Logo Fablab (All White) Horizontal.png" alt="Social Fabrics Research Lab"></a>
+                <a href="https://connectm.uvt.ro/" target="_blank"><img src="logos/fablab-white.png" alt="Social Fabrics Research Lab"></a>
             </div>
             <button id="mobile-nav-toggle" class="mobile-nav-toggle" aria-label="Menu">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -278,9 +283,6 @@
         </main>
     </div>
 
-    <!-- Overlay for closing dropdowns -->
-    <div id="dropdown-overlay" class="hidden"></div>
-
     <!-- ====== ONBOARDING / WELCOME MODAL ====== -->
     <div id="onboarding-overlay" class="onboarding-overlay hidden">
         <div class="onboarding-modal" role="dialog" aria-modal="true" aria-label="Ghid de utilizare">
@@ -331,12 +333,9 @@
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script type="module" src="js/data.js?v=4"></script>
-    <script type="module" src="js/network.js?v=4"></script>
-    <script type="module" src="js/network2.js?v=4"></script>
-    <script type="module" src="js/statistics.js?v=4"></script>
-    <script type="module" src="js/about.js?v=4"></script>
-    <script type="module" src="js/app.js?v=4"></script>
+    <!-- Single module entry point — app.js imports the rest exactly once.
+         (Listing every module here as well would instantiate them twice,
+         because the import specifiers would not match these URLs.) -->
+    <script type="module" src="js/app.js?v=5"></script>
 </body>
 </html>

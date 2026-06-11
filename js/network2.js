@@ -7,6 +7,7 @@ import {
     loadNetwork2Data, ACTOR_TYPES, NET2_CONTEXTS,
     getActorLabel
 } from './data.js';
+import { escapeHtml, truncate, moveTooltip, fitTransform, downloadSvg } from './graph-utils.js';
 
 let net2Data = null;
 let svg, g, linkGroup, nodeGroup, labelGroup;
@@ -132,11 +133,10 @@ function rebuildGraph() {
         const n = nodes[id];
         // size by Nr_colaborari (sqrt scale, clamped)
         const r = Math.max(5, Math.min(18, 4 + Math.sqrt(n.nrColaborari) * 2.5));
-        const fullLabel = n.label;
         const d3Node = {
             id,
-            label: fullLabel.length > 26 ? fullLabel.substring(0, 23) + '…' : fullLabel,
-            fullLabel,
+            label: truncate(n.label, 26),
+            fullLabel: n.label,
             type: 'ONG',
             color: n.color,
             radius: r,
@@ -220,7 +220,7 @@ function renderGraph(nodes, links) {
     labelSel = labelGroup.selectAll('text')
         .data(nodes, d => d.id)
         .join('text')
-        .text(d => d.type === 'ISU' ? d.label : (d.label.length > 18 ? d.label.substring(0, 16) + '…' : d.label))
+        .text(d => d.type === 'ISU' ? d.label : truncate(d.label, 18))
         .attr('text-anchor', 'middle')
         .attr('dy', d => d.type === 'ISU' ? d.radius + 16 : d.radius + 12)
         .attr('fill', '#cbd5e1')
@@ -245,7 +245,7 @@ function renderGraph(nodes, links) {
         highlightConnections(d);
         showTooltip(event, d, tooltip);
     })
-    .on('mousemove', (event) => { if (!isMobile()) moveTooltip(event, tooltip); })
+    .on('mousemove', (event) => { if (!isMobile()) moveTooltip(event, tooltip, graphContainer()); })
     .on('mouseleave', function () {
         if (isMobile()) return;
         if (selectedNodeId) {
@@ -359,36 +359,27 @@ function resetHighlight() {
 
 // ---- ZOOM ----
 
+function graphContainer() {
+    return document.getElementById('graph-container2');
+}
+
 function zoomToFocus(d) {
-    if (!zoomBehavior || !svg) return;
     const ids = connectedIdSet(d);
-    const ns = currentNodes.filter(n => ids.has(n.id) && n.x !== undefined);
-    if (ns.length === 0) return;
     // Bias left so the cluster isn't hidden behind the right-docked detail panel.
     const offsetX = window.innerWidth >= 768 ? 196 : 0;
-    fitTo(ns, 100, 2.5, offsetX);
+    fitTo(currentNodes.filter(n => ids.has(n.id)), { padding: 100, maxScale: 2.5, offsetX });
 }
 
 function zoomReset() {
-    const positioned = currentNodes.filter(n => n.x !== undefined);
-    if (positioned.length === 0) return;
-    fitTo(positioned, 50, 1.3);
+    fitTo(currentNodes, { padding: 50, maxScale: 1.3 });
 }
 
-function fitTo(ns, padding, maxScale, offsetX = 0) {
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    ns.forEach(n => {
-        minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
-        minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
-    });
-    minX -= padding; maxX += padding; minY -= padding; maxY += padding;
-    const dx = maxX - minX, dy = maxY - minY;
-    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-    const scale = Math.min(width / dx, height / dy, maxScale);
-    if (!isFinite(scale) || scale <= 0 || !width || !height) return;
-    const tx = width / 2 - offsetX - cx * scale, ty = height / 2 - cy * scale;
+function fitTo(ns, opts) {
+    if (!zoomBehavior || !svg) return;
+    const transform = fitTransform(ns, width, height, opts);
+    if (!transform) return;
     svg.transition().duration(700).ease(d3.easeCubicInOut)
-        .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+        .call(zoomBehavior.transform, transform);
 }
 
 // ---- TOOLTIP ----
@@ -409,17 +400,7 @@ function showTooltip(event, d, el) {
     }
     el.innerHTML = html;
     el.classList.remove('hidden');
-    moveTooltip(event, el);
-}
-
-function moveTooltip(event, el) {
-    const rect = document.getElementById('graph-container2').getBoundingClientRect();
-    let x = event.clientX - rect.left + 14;
-    let y = event.clientY - rect.top - 10;
-    if (x + 260 > rect.width) x = event.clientX - rect.left - 260;
-    if (y + 100 > rect.height) y = event.clientY - rect.top - 100;
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
+    moveTooltip(event, el, graphContainer());
 }
 
 function hideTooltip(el) { el.classList.add('hidden'); }
@@ -720,9 +701,8 @@ function buildLegend() {
     html += '<div class="legend-section-title" style="margin-top:10px">Cele mai active ONG-uri</div>';
     html += '<div class="legend-top-list">';
     for (const n of top) {
-        const short = n.label.length > 26 ? n.label.substring(0, 24) + '…' : n.label;
         html += `<button class="legend-top-item" data-label="${escapeHtml(n.label)}" title="${escapeHtml(n.label)}">
-            <span class="legend-top-name">${escapeHtml(short)}</span>
+            <span class="legend-top-name">${escapeHtml(truncate(n.label, 26))}</span>
             <span class="legend-top-badge">${n.nrISU} jud.</span>
         </button>`;
     }
@@ -766,30 +746,7 @@ function setupToolbar() {
 
 function exportGraph() {
     if (!svg) return;
-    const svgEl = svg.node();
-    const clone = svgEl.cloneNode(true);
-
-    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    bg.setAttribute('width', width);
-    bg.setAttribute('height', height);
-    bg.setAttribute('fill', '#0a0e1a');
-    clone.insertBefore(bg, clone.firstChild);
-    clone.setAttribute('width', width);
-    clone.setAttribute('height', height);
-
-    clone.querySelectorAll('text').forEach(el => {
-        if (!el.style.fontFamily) el.style.fontFamily = 'sans-serif';
-    });
-
-    const serializer = new XMLSerializer();
-    const svgString = '<?xml version="1.0" encoding="UTF-8"?>' + serializer.serializeToString(clone);
-    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'retea-operationala-isu.svg';
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    downloadSvg(svg.node(), width, height, 'retea-operationala-isu.svg');
 }
 
 // ---- STATS / EMPTY ----
@@ -823,12 +780,4 @@ function updateEmptyMessage(count) {
     } else if (msg) {
         msg.style.display = 'none';
     }
-}
-
-// ---- UTIL ----
-
-function escapeHtml(str) {
-    return String(str)
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }

@@ -303,19 +303,17 @@ export async function loadNetwork2Data() {
     };
 }
 
-// Load all statistics data
+// Load all statistics data (only the files actually rendered in statistics.js)
 export async function loadStatsData() {
     const files = {
         interv: "data/interventii_ambulanta.csv",
         apeluri: "data/apeluri_urgenta.csv",
         timp: "data/timp_raspuns.csv",
         igsu: "data/situatii_igsu.csv",
-        risc: "data/categorii_risc.csv",
         zbor: "data/ore_zbor.csv",
         upu: "data/prezentari_upu.csv",
         instruire: "data/instruire_persoane.csv",
         protocoale: "data/protocoale.csv",
-        actiuni: "data/tipuri_actiuni.csv",
         expertiza: "data/arii_expertiza.csv",
         flux: "data/flux_interventie.csv",
         timpi: "data/detaliere_timpi.csv",

@@ -4,8 +4,9 @@
 
 import {
     DOMAIN_GROUPS, ENTITY_TYPES, FONSS_PARENT_NAME,
-    classifyEntityType, getEntityColor
+    classifyEntityType
 } from './data.js';
+import { escapeHtml, truncate, moveTooltip, fitTransform, downloadSvg } from './graph-utils.js';
 
 let simulation = null;
 let svg, g, linkGroup, nodeGroup, labelGroup;
@@ -15,7 +16,6 @@ let currentNodes = [];
 let currentLinks = [];
 let allNetworkData = null;
 let selectedNodeId = null;
-let hoveredNodeId = null;
 let currentLinkSel = null;
 let currentNodeSel = null;
 let currentLabelSel = null;
@@ -27,7 +27,6 @@ let keyboardFocusIndex = -1;
 let filterState = {
     domains: [],
     entityTypes: [],      // multi-select entity types
-    specialFilter: null,  // backward compat
     specialFilters: []    // multi-select special filters ['strategic', 'ukraine']
 };
 
@@ -64,10 +63,6 @@ export function selectNodeByName(name) {
         // Wait for simulation to settle a bit first
         setTimeout(() => selectNode(node), 100);
     }
-}
-
-export function getFilterState() {
-    return filterState;
 }
 
 // ---- SVG SETUP ----
@@ -187,15 +182,14 @@ function rebuildGraph() {
 
     for (const pId of visiblePartners) {
         const node = nodes[pId];
-        const isStrategic = node.strategic;
         const d3Node = {
             id: pId,
-            label: node.label.length > 28 ? node.label.substring(0, 25) + '...' : node.label,
+            label: truncate(node.label, 28),
             fullLabel: node.label,
             type: 'Partner',
             entityType: node.entityType,
             color: node.color,
-            radius: isStrategic ? 14 : 10,
+            radius: node.strategic ? 14 : 10,
             data: node
         };
         d3Nodes.push(d3Node);
@@ -216,7 +210,7 @@ function rebuildGraph() {
             if (node.isFonssMember && node.parentId === fonssId) {
                 const d3Node = {
                     id: id,
-                    label: node.label.length > 28 ? node.label.substring(0, 25) + '...' : node.label,
+                    label: truncate(node.label, 28),
                     fullLabel: node.label,
                     type: 'Partner',
                     entityType: node.entityType,
@@ -298,7 +292,7 @@ function renderGraph(nodes, links) {
     const labelSel = labelGroup.selectAll('text')
         .data(nodes, d => d.id)
         .join('text')
-        .text(d => d.type === 'Domain' ? d.label : (d.label.length > 20 ? d.label.substring(0, 18) + '...' : d.label))
+        .text(d => d.type === 'Domain' ? d.label : truncate(d.label, 20))
         .attr('text-anchor', 'middle')
         .attr('dy', d => d.type === 'Domain' ? d.radius + 16 : d.radius + 14)
         .attr('fill', '#cbd5e1')
@@ -323,17 +317,15 @@ function renderGraph(nodes, links) {
     nodeSel.on('mouseenter', function(event, d) {
         // Skip tooltip on mobile - only show on desktop hover
         if (isMobileDevice()) return;
-        hoveredNodeId = d.id;
         highlightConnections(d, linkSel, nodeSel, labelSel);
         showTooltip(event, d, tooltip);
     })
     .on('mousemove', function(event) {
         if (isMobileDevice()) return;
-        moveTooltip(event, tooltip);
+        moveTooltip(event, tooltip, graphContainer());
     })
     .on('mouseleave', function() {
         if (isMobileDevice()) return;
-        hoveredNodeId = null;
         if (selectedNodeId) {
             const selNode = currentNodes.find(n => n.id === selectedNodeId);
             if (selNode) {
@@ -460,6 +452,10 @@ function resetHighlight(linkSel, nodeSel, labelSel) {
 
 // ---- ZOOM FOCUS ----
 
+function graphContainer() {
+    return document.getElementById('graph-container');
+}
+
 function zoomToFocus(d) {
     if (!zoomBehavior || !svg) return;
 
@@ -472,91 +468,42 @@ function zoomToFocus(d) {
         if (tId === d.id) connectedIds.add(sId);
     });
 
-    const connectedNodes = currentNodes.filter(n => connectedIds.has(n.id) && n.x !== undefined);
-    if (connectedNodes.length === 0) return;
-
-    // Calculate bounding box of selected node + neighbors
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    connectedNodes.forEach(n => {
-        minX = Math.min(minX, n.x);
-        maxX = Math.max(maxX, n.x);
-        minY = Math.min(minY, n.y);
-        maxY = Math.max(maxY, n.y);
-    });
-
-    // Add padding around the cluster
-    const padding = 100;
-    minX -= padding;
-    maxX += padding;
-    minY -= padding;
-    maxY += padding;
-
-    const dx = maxX - minX;
-    const dy = maxY - minY;
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
-
-    // Scale to fit, capped so we don't zoom in too far
-    const scale = Math.min(width / dx, height / dy, 2.5);
-    if (!isFinite(scale) || scale <= 0 || !width || !height) return;
     // When the detail panel is docked on the right (desktop), bias the focus
     // point left so the cluster lands in the visible area, not behind the panel.
     const detailOpen = !document.getElementById('partner-detail')?.classList.contains('hidden');
     const offsetX = (detailOpen && window.innerWidth >= 768) ? 196 : 0;
-    const tx = width / 2 - offsetX - cx * scale;
-    const ty = height / 2 - cy * scale;
+
+    const transform = fitTransform(
+        currentNodes.filter(n => connectedIds.has(n.id)),
+        width, height, { padding: 100, maxScale: 2.5, offsetX }
+    );
+    if (!transform) return;
 
     svg.transition()
         .duration(750)
         .ease(d3.easeCubicInOut)
-        .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+        .call(zoomBehavior.transform, transform);
 }
 
 function zoomReset() {
-    if (!zoomBehavior || !svg || currentNodes.length === 0) return;
-
-    // Fit all visible nodes
-    const positioned = currentNodes.filter(n => n.x !== undefined);
-    if (positioned.length === 0) return;
-
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    positioned.forEach(n => {
-        minX = Math.min(minX, n.x);
-        maxX = Math.max(maxX, n.x);
-        minY = Math.min(minY, n.y);
-        maxY = Math.max(maxY, n.y);
-    });
-
-    const padding = 60;
-    minX -= padding;
-    maxX += padding;
-    minY -= padding;
-    maxY += padding;
-
-    const dx = maxX - minX;
-    const dy = maxY - minY;
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
-
-    const scale = Math.min(width / dx, height / dy, 1);
-    if (!isFinite(scale) || scale <= 0 || !width || !height) return;
-    const tx = width / 2 - cx * scale;
-    const ty = height / 2 - cy * scale;
+    if (!zoomBehavior || !svg) return;
+    const transform = fitTransform(currentNodes, width, height, { padding: 60, maxScale: 1 });
+    if (!transform) return;
 
     svg.transition()
         .duration(750)
         .ease(d3.easeCubicInOut)
-        .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(scale));
+        .call(zoomBehavior.transform, transform);
 }
 
 // ---- TOOLTIP ----
 
 function showTooltip(event, d, el) {
-    const { nodes, edges } = allNetworkData;
-    let html = `<div class="tooltip-name">${d.data.label}</div>`;
+    const { edges } = allNetworkData;
+    let html = `<div class="tooltip-name">${escapeHtml(d.data.label)}</div>`;
 
     if (d.type === 'Partner') {
-        html += `<div class="tooltip-type">${d.entityType}</div>`;
+        html += `<div class="tooltip-type">${escapeHtml(d.entityType)}</div>`;
         const domainCount = edges.filter(e => e.source === d.id).length;
         html += `<div class="tooltip-connections">${domainCount} domenii conectate</div>`;
         if (d.data.strategic) html += `<div style="color:#f59e0b;font-size:0.72rem">Partener strategic</div>`;
@@ -569,19 +516,7 @@ function showTooltip(event, d, el) {
 
     el.innerHTML = html;
     el.classList.remove('hidden');
-    moveTooltip(event, el);
-}
-
-function moveTooltip(event, el) {
-    const rect = document.getElementById('graph-container').getBoundingClientRect();
-    let x = event.clientX - rect.left + 14;
-    let y = event.clientY - rect.top - 10;
-
-    if (x + 260 > rect.width) x = event.clientX - rect.left - 260;
-    if (y + 100 > rect.height) y = event.clientY - rect.top - 100;
-
-    el.style.left = x + 'px';
-    el.style.top = y + 'px';
+    moveTooltip(event, el, graphContainer());
 }
 
 function hideTooltip(el) {
@@ -598,7 +533,8 @@ function selectNode(d) {
     }
 
     selectedNodeId = d.id;
-    keyboardFocusIndex = currentNodes.indexOf(d);
+    // Tab cycling walks the partner-only list, so index within that list
+    keyboardFocusIndex = currentNodes.filter(n => n.type === 'Partner').indexOf(d);
     showDetailCard(d);
 
     // Update URL hash
@@ -698,8 +634,8 @@ function showDetailCard(d) {
     let html = '';
 
     if (d.type === 'Partner') {
-        html += `<div class="detail-name">${d.data.label}</div>`;
-        html += `<div class="detail-type">${d.entityType}</div>`;
+        html += `<div class="detail-name">${escapeHtml(d.data.label)}</div>`;
+        html += `<div class="detail-type">${escapeHtml(d.entityType)}</div>`;
 
         let badges = '';
         if (d.data.strategic) badges += '<span class="badge badge-strategic">Partener strategic</span>';
@@ -707,7 +643,7 @@ function showDetailCard(d) {
         if (d.data.isFonssMember) badges += '<span class="badge badge-fonss">FONSS</span>';
         if (badges) html += `<div class="detail-badges">${badges}</div>`;
 
-        html += `<div class="detail-desc">${d.data.description}</div>`;
+        html += `<div class="detail-desc">${escapeHtml(d.data.description)}</div>`;
 
         html += `<div class="detail-domains-label">Domenii de activitate</div>`;
         html += `<div class="detail-domains">`;
@@ -719,7 +655,7 @@ function showDetailCard(d) {
                 .map(e => nodes[e.target]?.label)
                 .filter(Boolean);
             [...new Set(myDomains)].sort().forEach(dom => {
-                html += `<span class="tag-domain">${dom}</span>`;
+                html += `<span class="tag-domain">${escapeHtml(dom)}</span>`;
             });
         }
         html += `</div>`;
@@ -730,15 +666,15 @@ function showDetailCard(d) {
             .map(e => nodes[e.source]?.label)
             .filter(Boolean);
 
-        html += `<div class="detail-name">${d.data.label}</div>`;
+        html += `<div class="detail-name">${escapeHtml(d.data.label)}</div>`;
         html += `<div class="detail-type">Domeniu de activitate</div>`;
-        html += `<div class="domain-partner-count">Acest domeniu conecteaza <strong>${linkedPartners.length}</strong> parteneri.</div>`;
+        html += `<div class="domain-partner-count">Acest domeniu conectează <strong>${linkedPartners.length}</strong> parteneri.</div>`;
 
         if (linkedPartners.length > 0) {
-            html += `<div class="detail-domains-label" style="margin-top:12px">Parteneri conectati</div>`;
+            html += `<div class="detail-domains-label" style="margin-top:12px">Parteneri conectați</div>`;
             html += `<div class="detail-domains">`;
             linkedPartners.sort().forEach(name => {
-                html += `<span class="tag-domain">${name}</span>`;
+                html += `<span class="tag-domain">${escapeHtml(name)}</span>`;
             });
             html += `</div>`;
         }
@@ -747,9 +683,6 @@ function showDetailCard(d) {
     content.innerHTML = html;
     detail.classList.remove('hidden');
 }
-
-// Listen for deselect events
-document.addEventListener('deselect-node', deselectNode);
 
 // Close detail card button
 document.getElementById('close-detail')?.addEventListener('click', deselectNode);
@@ -967,13 +900,13 @@ function buildSpecialFilters(networkData) {
     }
 
     container.innerHTML = `
-        <label class="filter-checkbox" title="Parteneri strategici - parteneri cu care DSU are protocoale extinse de colaborare">
+        <label class="filter-checkbox" title="Parteneri strategici – parteneri cu care DSU are protocoale extinse de colaborare">
             <input type="checkbox" value="strategic">
             <span class="filter-icon">&#9733;</span>
             <span class="filter-label">Parteneri strategici</span>
             <span class="filter-count">${strategicCount}</span>
         </label>
-        <label class="filter-checkbox" title="Parteneri implicati in gestionarea crizei din Ucraina">
+        <label class="filter-checkbox" title="Parteneri implicați în gestionarea crizei din Ucraina">
             <input type="checkbox" value="ukraine">
             <span class="filter-icon filter-icon-ua">UA</span>
             <span class="filter-label">Sprijin Ucraina</span>
@@ -983,10 +916,7 @@ function buildSpecialFilters(networkData) {
 
     container.querySelectorAll('input[type="checkbox"]').forEach(cb => {
         cb.addEventListener('change', () => {
-            const checked = [...container.querySelectorAll('input[type="checkbox"]:checked')].map(c => c.value);
-            // For special filters, we'll use an array now
-            filterState.specialFilters = checked;
-            filterState.specialFilter = checked.length > 0 ? checked[0] : null; // backward compat
+            filterState.specialFilters = [...container.querySelectorAll('input[type="checkbox"]:checked')].map(c => c.value);
             updateSpecialCountLabel();
             deselectNode();
             rebuildGraph();
@@ -1030,7 +960,7 @@ function buildSearch(networkData) {
         }
 
         resultsEl.innerHTML = matches.map(m =>
-            `<div class="search-result-item" data-id="${m.id}">${m.label}</div>`
+            `<div class="search-result-item" data-id="${m.id}">${escapeHtml(m.label)}</div>`
         ).join('');
         resultsEl.classList.remove('hidden');
 
@@ -1069,7 +999,7 @@ function setupMobileFilters(networkData) {
     // Build mobile entity filters
     const mobileEntity = document.getElementById('mobile-entity-filters');
     if (mobileEntity) {
-        let html = '<div class="mfp-title">Tip organizatie</div><div class="mfp-pills">';
+        let html = '<div class="mfp-title">Tip organizație</div><div class="mfp-pills">';
         for (const [type, config] of Object.entries(ENTITY_TYPES)) {
             html += `<button class="entity-pill" data-type="${type}">
                 <span class="entity-dot" style="background:${config.color}"></span>
@@ -1150,7 +1080,6 @@ function setupMobileFilters(networkData) {
                 btn.classList.toggle('active');
                 filterState.specialFilters = [...mobileSpecial.querySelectorAll('.special-pill.active')]
                     .map(b => b.dataset.filter);
-                filterState.specialFilter = filterState.specialFilters[0] || null; // backward compat
                 syncDesktopSpecialFilters();
                 deselectNode();
                 rebuildGraph();
@@ -1271,8 +1200,8 @@ function updateEmptyMessage(partnerCount) {
                     <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
                     <path d="M8 11h6"/>
                 </svg>
-                <div class="empty-graph-title">Nu exista niciun partener</div>
-                <div class="empty-graph-text">Verifica filtrele selectate - niciun partener nu corespunde criteriilor actuale.</div>
+                <div class="empty-graph-title">Nu există niciun partener</div>
+                <div class="empty-graph-text">Verifică filtrele selectate – niciun partener nu corespunde criteriilor actuale.</div>
             `;
             document.getElementById('graph-container').appendChild(msgEl);
         }
@@ -1293,20 +1222,20 @@ function setupNavHelp() {
     helpCard.id = 'nav-help-card';
     helpCard.className = 'nav-help-card';
     helpCard.innerHTML = `
-        <button id="nav-help-close" class="nav-help-close" title="Inchide">&times;</button>
+        <button id="nav-help-close" class="nav-help-close" title="Închide">&times;</button>
         <div class="nav-help-title">Bun venit!</div>
         <div class="nav-help-intro">
-            Aceasta aplicatie vizualizeaza <strong>ecosistemul de parteneriate</strong> ale Departamentului pentru
-            Situatii de Urgenta (DSU). Exploreaza reteaua pentru a descoperi organizatiile partenere,
-            domeniile de activitate si conexiunile dintre ele.
+            Această aplicație vizualizează <strong>ecosistemul de parteneriate</strong> ale Departamentului pentru
+            Situații de Urgență (DSU). Explorează rețeaua pentru a descoperi organizațiile partenere,
+            domeniile de activitate și conexiunile dintre ele.
         </div>
-        <div class="nav-help-subtitle">Cum navigati</div>
+        <div class="nav-help-subtitle">Cum navighezi</div>
         <div class="nav-help-content">
             <div class="nav-help-item"><strong>Hover</strong> pe un nod &ndash; vezi conexiunile</div>
             <div class="nav-help-item"><strong>Click</strong> pe un nod &ndash; vezi detaliile partenerului</div>
-            <div class="nav-help-item"><strong>Scroll</strong> &ndash; zoom in/out pe retea</div>
-            <div class="nav-help-item"><strong>Drag</strong> &ndash; muta vizualizarea sau noduri individuale</div>
-            <div class="nav-help-item"><strong>Filtre</strong> &ndash; foloseste bara de sus pentru a filtra parteneri</div>
+            <div class="nav-help-item"><strong>Scroll</strong> &ndash; zoom in/out pe rețea</div>
+            <div class="nav-help-item"><strong>Drag</strong> &ndash; mută vizualizarea sau noduri individuale</div>
+            <div class="nav-help-item"><strong>Filtre</strong> &ndash; folosește bara de sus pentru a filtra parteneri</div>
         </div>
     `;
     page.appendChild(helpCard);
@@ -1316,7 +1245,7 @@ function setupNavHelp() {
     helpBtn.id = 'nav-help-btn';
     helpBtn.className = 'nav-help-btn';
     helpBtn.innerHTML = '?';
-    helpBtn.title = 'Cum navigati reteaua';
+    helpBtn.title = 'Cum navighezi rețeaua';
     helpBtn.style.display = 'none';
     const helpBtnContainer = document.getElementById('nav-help-btn-container');
     if (helpBtnContainer) {
@@ -1373,33 +1302,8 @@ function setupGraphToolbar() {
 }
 
 function exportGraph() {
-    const svgEl = svg.node();
-    const clone = svgEl.cloneNode(true);
-
-    // Add background rect
-    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    bg.setAttribute('width', width);
-    bg.setAttribute('height', height);
-    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
-    bg.setAttribute('fill', isDark ? '#0a0e1a' : '#f8fafc');
-    clone.insertBefore(bg, clone.firstChild);
-
-    // Inline font family on text elements
-    clone.querySelectorAll('text').forEach(el => {
-        if (!el.style.fontFamily) el.style.fontFamily = 'sans-serif';
-    });
-
-    // Serialize and download
-    const serializer = new XMLSerializer();
-    let svgString = '<?xml version="1.0" encoding="UTF-8"?>' + serializer.serializeToString(clone);
-
-    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'retea-parteneri-dsu.svg';
-    link.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    if (!svg) return;
+    downloadSvg(svg.node(), width, height, 'retea-parteneri-dsu.svg');
 }
 
 // ---- KEYBOARD NAVIGATION ----

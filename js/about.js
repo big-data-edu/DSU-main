@@ -121,6 +121,9 @@ export function initAbout() {
                         <a href="https://www.uvt.ro" target="_blank" title="Universitatea de Vest din Timișoara">
                             <img src="logos/uvt.png" alt="UVT">
                         </a>
+                        <a href="https://fsgc.uvt.ro" target="_blank" title="Facultatea de Științe ale Guvernării și Comunicării">
+                            <img src="logos/fsgc.png" alt="FSGC">
+                        </a>
                     </div>
 
                     <div style="border-top: 1px solid var(--border-subtle); padding-top: 14px; margin-top: 14px;">

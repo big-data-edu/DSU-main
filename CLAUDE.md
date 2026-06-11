@@ -24,8 +24,9 @@ No npm, no bundler, no build process. All dependencies are loaded via CDN in `in
 ```
 ├── index.html                 # SPA entry point (navbar, filter bar, page shells)
 ├── js/
-│   ├── app.js                 # Routing, initialization, navigation events
+│   ├── app.js                 # Routing, initialization, navigation events (single module entry)
 │   ├── data.js                # CSV loading, parsing, entity classification
+│   ├── graph-utils.js         # Helpers shared by both network views (escape, truncate, fit, tooltip, SVG export)
 │   ├── network.js             # D3 force graph (partners ↔ domains), filters, search
 │   ├── network2.js            # D3 bipartite force graph (ONG ↔ ISU județean)
 │   ├── statistics.js          # Plotly charts across 4 tabs
@@ -34,33 +35,16 @@ No npm, no bundler, no build process. All dependencies are loaded via CDN in `in
 │   └── app.css                # All styles (dark theme, responsive, animations)
 ├── data.csv                   # Main partner data (64 partners; domains standardized)
 ├── data_retea2_isu.csv        # Network 2 data (256 ONGs ↔ 34 ISU județene)
-├── muchii_operational_bipartit.csv # Optional per-edge context for network 2
+├── muchii_operational_bipartit.csv # Optional per-edge context for network 2 (not loaded yet)
 ├── membrii_fonss.csv          # FONSS organization members (45 members)
-├── data/                      # 18 statistics CSV files
-│   ├── interventii_ambulanta.csv
-│   ├── apeluri_urgenta.csv
-│   ├── timp_raspuns.csv
-│   ├── situatii_igsu.csv
-│   ├── categorii_risc.csv
-│   ├── ore_zbor.csv
-│   ├── prezentari_upu.csv
-│   ├── instruire_persoane.csv
-│   ├── protocoale.csv
-│   ├── tipuri_actiuni.csv
-│   ├── arii_expertiza.csv
-│   ├── flux_interventie.csv
-│   ├── detaliere_timpi.csv
-│   ├── sanctiuni.csv
-│   ├── lant_comanda.csv
-│   ├── timeline_dsu.csv
-│   └── harta_isu.csv
-├── logos/                     # Brand assets (DSU, UVT, FabLab/ConnecTM)
-├── TASKS.md                   # Outstanding feature tasks
-├── .github/
-│   ├── CODEOWNERS
-│   └── copilot-instructions.md  # Legacy AI instructions (references old Streamlit app)
-├── .devcontainer/
-│   └── devcontainer.json      # Dev container config (Python 3.11, legacy)
+├── data/                      # Statistics CSVs + map geometry
+│   ├── *.csv                  # 17 datasets; 14 are rendered (categorii_risc, tipuri_actiuni,
+│   │                          #   harta_isu are currently unused by statistics.js)
+│   ├── romania.geojson        # County outlines for the choropleth (vendored, simplified)
+│   └── surse-xlsx/            # Raw .xlsx source files behind the CSVs (not loaded by the app)
+├── logos/                     # Brand assets (DSU, UVT, FSGC, FabLab/ConnecTM)
+├── TASKS.md                   # Feature task log
+├── .github/CODEOWNERS
 └── .nojekyll                  # Disables Jekyll for GitHub Pages
 ```
 
@@ -90,12 +74,20 @@ Then open `http://localhost:8000`.
 ### Module Dependency Graph
 
 ```
-app.js (entry)
-├── data.js      — loadNetworkData(), loadStatsData(), entity classification
-├── network.js   — initNetwork(), D3 force simulation, filter state, interactions
-├── statistics.js — initStatistics(), Plotly chart rendering
-└── about.js     — initAbout(), static HTML generation
+app.js (entry — the ONLY <script> tag in index.html; everything else is imported)
+├── data.js        — loadNetworkData(), loadStatsData(), loadNetwork2Data(), entity classification
+├── network.js     — initNetwork(), D3 force simulation, filter state, interactions
+├── network2.js    — initNetwork2(), bipartite ONG ↔ ISU graph
+├── statistics.js  — initStatistics(), Plotly chart rendering
+├── about.js       — initAbout(), static HTML generation
+└── graph-utils.js — shared by network.js / network2.js (escapeHtml, truncate,
+                     moveTooltip, fitTransform, downloadSvg)
 ```
+
+Important: do NOT add the imported modules as separate `<script type="module">`
+tags in `index.html`, and do not put `?v=` query strings on import specifiers.
+Either one makes the browser instantiate the same module twice (different URLs
+= different modules), which double-registers top-level event listeners.
 
 ### Data Flow
 
@@ -109,8 +101,8 @@ app.js (entry)
 - **Partners** are loaded from `data.csv` with columns: `Partner`, `Domain_Raw`, `Ukraine`, `Strategic`, `Description`
 - **FONSS members** from `membrii_fonss.csv` are attached as children of the FONSS parent node
 - **Entity types** (6 categories) are classified by keyword matching on organization name — see `ENTITY_TYPES` in `data.js`
-- **Domain groups** (4 categories) aggregate raw domain strings into higher-level categories — see `DOMAIN_GROUPS` in `data.js`
-- **Statistics** are 16 independent CSV files under `data/`, each with their own schema
+- **Domain groups** (2 groups) organize the standardized domain tokens in the filter UI — see `DOMAIN_GROUPS` in `data.js`
+- **Statistics** are independent CSV files under `data/`, each with their own schema
 
 ## Code Conventions
 
@@ -171,17 +163,11 @@ This project has no automated tests, no linting configuration, and no CI/CD pipe
 
 ## Outstanding Tasks
 
-See `TASKS.md` for the current feature backlog, including:
-- Filter count display
-- Empty graph message
-- Navigation help card
-- Statistics grid alignment
-- About page updates
-- Sources and data section
+See `TASKS.md` for the feature task log (all listed tasks are implemented; the
+file is kept as a record).
 
 ## Legacy Notes
 
-- The project was originally a single-file Streamlit Python app (`app.py`) that has since been deleted
-- `.github/copilot-instructions.md` still references the old Streamlit architecture — it is outdated
-- `.devcontainer/devcontainer.json` and `requirements.txt` reference Python/Streamlit — these are legacy artifacts
-- The `.gitignore` is Python-centric (`.pyc`, `__pycache__`, `venv`) and lacks JavaScript-specific patterns
+- The project was originally a single-file Streamlit Python app (`app.py`); all
+  Python/Streamlit artifacts (`requirements.txt`, `.devcontainer/`,
+  `.github/copilot-instructions.md`) have been removed

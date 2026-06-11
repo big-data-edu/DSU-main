@@ -1,7 +1,7 @@
 /* =========================================
    GLOBAL RESET & BASE STYLES
+   (fonts are loaded via <link> in index.html)
    ========================================= */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap');
 
 *, *::before, *::after {
     box-sizing: border-box;
@@ -1674,13 +1674,6 @@ body.no-filter-bar #app-container {
 }
 
 /* =========================================
-   DROPDOWN OVERLAY (disabled - not used)
-   ========================================= */
-#dropdown-overlay {
-    display: none !important;
-}
-
-/* =========================================
    UTILITY
    ========================================= */
 .hidden {
@@ -1743,16 +1736,25 @@ body.no-filter-bar #app-container {
         height: 24px;
     }
 
-    /* Hide desktop filter items, show mobile toggle */
-    #entity-filters,
+    /* Hide network-1 desktop filter items, show its mobile toggle.
+       (Scoped to #filter-bar: the operational network's only filter is the
+       compact context dropdown in #filter-bar2, which stays usable on mobile.) */
+    #filter-bar #entity-filters,
     .fb-separator,
-    .fb-dropdown-wrap,
-    #special-filters {
+    #filter-bar .fb-dropdown-wrap,
+    #filter-bar #special-filters {
         display: none !important;
     }
 
     .fb-mobile-toggle {
         display: flex;
+    }
+
+    /* Keep the network-2 context dropdown panel inside the viewport */
+    #filter-bar2 .fb-dropdown-panel {
+        left: auto;
+        right: 0;
+        width: min(320px, calc(100vw - 24px));
     }
 
     .fb-search {
@@ -1801,11 +1803,6 @@ body.no-filter-bar #app-container {
         max-height: 50vh;
         overflow-y: auto;
         animation: slideUp var(--motion-base) var(--ease) both;
-    }
-
-    @keyframes slideUp {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
     }
 
     /* Nav help card on mobile */
